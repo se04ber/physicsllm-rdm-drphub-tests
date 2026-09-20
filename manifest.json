@@ -1,17 +1,21 @@
 {
   "schema": "physicsllm.upload_manifest.v1",
   "id": "s4p-transfer-guide",
-  "title": "Getting data in and out of S4P — tutorial and preflight checks",
+  "title": "Getting data in and out of S4P \u2014 tutorial and preflight checks",
   "kind": "documentation+check",
   "license": "CC-BY-4.0",
   "canonical_source": {
-    "note": "README.md and s4p-transfer.sh are mirrored from physicsllm-rdm; fix them there.",
+    "note": "Upload tooling is HelperScripts/hifis-upload.sh in c5_infrastructure; this card documents and checks, it does not ship a second uploader.",
     "repo": "physicsllm-rdm",
-    "paths": ["docs/s4p-transfer/README.md", "docs/s4p-transfer/s4p-transfer.sh"]
+    "paths": [
+      "Infrastructure/c5_infrastructure/HelperScripts/hifis-upload.sh"
+    ]
   },
   "entry_point": "reana.yaml",
   "secrets": {
-    "optional": ["S4P_BEARER_TOKEN"],
+    "optional": [
+      "S4P_BEARER_TOKEN"
+    ],
     "note": "Runs fully without secrets; a token unlocks the authorisation check and the publish step."
   },
   "metrics": {
@@ -23,7 +27,6 @@
     "README.md",
     "preflight.py",
     "publish_results.py",
-    "s4p-transfer.sh",
     "reana.yaml",
     "CITATION.cff",
     "LICENSE"

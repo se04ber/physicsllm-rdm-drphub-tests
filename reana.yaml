@@ -15,7 +15,6 @@ inputs:
   files:
     - preflight.py
     - publish_results.py
-    - s4p-transfer.sh
     - README.md
     - manifest.json
     - LICENSE
