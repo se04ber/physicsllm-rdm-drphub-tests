@@ -1,0 +1,43 @@
+version: 0.1.0
+
+# Reach the DESY RDM MCP server from a Compute4PUNCH job.
+#
+# physicsllm-rdm.desy.de:8443 is intranet-only and has no route from the
+# public internet, so this card only makes sense pinned to a DESY drone -
+# that pinning IS the experiment. Directives follow the working C4P template
+# in C4Compute/c4_compute/reana_templates/c5_health_probe/reana-c4p.yaml.
+#
+# Prerequisite: the compute4punch backend needs HELMHOLTZ_TOP in the REANA
+# secret store. Check with `reana-client secrets-list` before submitting.
+#
+# Standard library only: the first real C4P run showed pip cannot write to
+# HOME on this backend, so a card that needs an install is a card that
+# does not run.
+
+inputs:
+  files:
+    - probe_mcp.py
+  parameters:
+    mcp_base: https://physicsllm-rdm.desy.de:8443
+    query: reflectivity
+    limit: 5
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: probe
+        environment: "wlcg-wn:latest"
+        compute_backend: compute4punch
+        c4p_cpu_cores: "1"
+        c4p_memory_limit: "512"
+        # Pin to DESY: this is what puts the job inside the network where
+        # our server is reachable at all.
+        c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
+        commands:
+          - mkdir -p results
+          - python3 probe_mcp.py --base ${mcp_base} --query "${query}" --limit ${limit} --out results
+
+outputs:
+  files:
+    - results/mcp_probe.json
