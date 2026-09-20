@@ -1,0 +1,27 @@
+version: 0.9.0
+
+# Answers one question: from wherever REANA places this job, which routes to
+# DESY S4P storage actually work? Exits 0 whichever way it turns out - the
+# report IS the result, so a red workflow would mean the card broke, not that
+# the answer was "no".
+
+inputs:
+  files:
+    - probe.py
+  parameters:
+    webdav_base: https://dcache-doma-door01.desy.de/punch/physicsllm
+    posix_root: /pnfs/desy.de/hifis-storage/punch/physicsllm
+    probe_path: 01Benchmarks
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: probe
+        environment: 'python:3.12-slim'
+        commands:
+          - python probe.py --webdav "${webdav_base}" --posix "${posix_root}" --path "${probe_path}" --out results
+
+outputs:
+  files:
+    - results/access_report.json
