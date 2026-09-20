@@ -1,0 +1,31 @@
+{
+  "schema": "physicsllm.upload_manifest.v1",
+  "id": "s4p-transfer-guide",
+  "title": "Getting data in and out of S4P — tutorial and preflight checks",
+  "kind": "documentation+check",
+  "license": "CC-BY-4.0",
+  "canonical_source": {
+    "note": "README.md and s4p-transfer.sh are mirrored from physicsllm-rdm; fix them there.",
+    "repo": "physicsllm-rdm",
+    "paths": ["docs/s4p-transfer/README.md", "docs/s4p-transfer/s4p-transfer.sh"]
+  },
+  "entry_point": "reana.yaml",
+  "secrets": {
+    "optional": ["S4P_BEARER_TOKEN"],
+    "note": "Runs fully without secrets; a token unlocks the authorisation check and the publish step."
+  },
+  "metrics": {
+    "required": [],
+    "research_only": [],
+    "note": "This card reports state; it does not score anything, so it declares no gates."
+  },
+  "files": [
+    "README.md",
+    "preflight.py",
+    "publish_results.py",
+    "s4p-transfer.sh",
+    "reana.yaml",
+    "CITATION.cff",
+    "LICENSE"
+  ]
+}

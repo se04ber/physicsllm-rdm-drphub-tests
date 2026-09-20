@@ -1,0 +1,48 @@
+version: 0.9.0
+
+# S4P data transfer: the tutorial, and the checks that prove it.
+#
+# Runs with no secrets at all. With S4P_BEARER_TOKEN in the REANA secret store
+# it additionally proves the token reaches the VO path and publishes its own
+# results back to S4P - so the card demonstrates the outbound direction on
+# itself rather than describing it.
+#
+#   reana-client secrets-add --env S4P_BEARER_TOKEN=<token>
+#
+# Both steps always exit 0. Not being set up yet is a finding, not a failure.
+
+inputs:
+  files:
+    - preflight.py
+    - publish_results.py
+    - s4p-transfer.sh
+    - README.md
+    - manifest.json
+    - LICENSE
+    - CITATION.cff
+  parameters:
+    s4p_base: https://dcache-doma-door01.desy.de/punch/physicsllm
+    use_case: s4p_transfer_preflight
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: preflight
+        environment: 'python:3.12-slim'
+        commands:
+          # Reports DNS, TCP, OPTIONS and - if a token is present - PROPFIND,
+          # separately, so a failure names its own cause.
+          - S4P_BASE=${s4p_base} python preflight.py
+
+      - name: publish
+        environment: 'python:3.12-slim'
+        commands:
+          # The outbound direction, demonstrated on this card's own output.
+          # Without a token this reports "no token" and still exits 0.
+          - python publish_results.py --base ${s4p_base} --use-case ${use_case}
+
+outputs:
+  files:
+    - results/preflight.json
+    - results/upload_report.json

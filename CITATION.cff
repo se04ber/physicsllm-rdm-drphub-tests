@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you follow or reuse this transfer guide, please cite it as below."
+title: "Getting data in and out of S4P — tutorial and preflight checks"
+abstract: >-
+  A step-by-step guide to moving data between a researcher's machine and the
+  HIFIS/PUNCH dCache instance at DESY, paired with a runnable preflight that
+  tests each prerequisite separately — DNS, TCP reach, WebDAV method set,
+  token validity and effective VO authorisation — so a blocked upload names
+  its own cause. Includes the reverse direction: a one-step workflow addition
+  that publishes a REANA run's results back to S4P under a run-traceable path.
+type: software
+license: CC-BY-4.0
+keywords:
+  - research data management
+  - dCache
+  - WebDAV
+  - Helmholtz AAI
+  - PUNCH4NFDI
+  - data transfer
+authors:
+  - name: "PhysicsLLM C.5, Deutsches Elektronen-Synchrotron DESY"
+    website: "https://physics-llm.erumdatahub.de/"
