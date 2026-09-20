@@ -1,0 +1,66 @@
+{
+  "contactEmail": "chen.shen@desy.de",
+  "creationLocation": "Deutsches Elektronen-Synchrotron DESY / PETRA III / P08 / Langmuir trough GID setup",
+  "creationTime": "2024-10-16T21:54:10Z",
+  "datasetName": "pseudo reflectivity of DPPG monolayer on tris-EDTA buffer surface (pH7.3) at pi = 35mN/m, 295K",
+  "description": "pseudo reflectivity derived from grazing incidence off-specular scattering of DPPG monolayer on the surface of tris-EDTA buffer (pH7.3) at surface pressure of 35mN/m, 295K",
+  "isPublished": true,
+  "owner": "Chen Shen",
+  "ownerGroup": "ingestor",
+  "principalInvestigator": "Chen Shen",
+  "proposalId": "11016139",
+  "scientificMetadata": {
+    "Analysis": {
+      "results": [
+        "pp4_edta_a_1_00137_R.dat",
+        "pp4_edta_a_1_00137_SF.dat",
+        "pp4_edta_a_1_00137_DS2RRF.dat",
+        "pp4_edta_a_1_beta_exp.dat",
+        "pp4_edta_a_1_beta_cmpr.dat"
+      ]
+    },
+    "Experiment": {
+      "facility": "PETRA III / P08",
+      "instrument": "P08 / Langmuir trough GID setup",
+      "probe": "x-ray",
+      "start_date": "2023-02-27T00:00:00",
+      "title": "GIXOS measurement / proof of concept of pseudo reflectivity"
+    },
+    "Measurement": {
+      "instrument_settings": {
+        "configuration": "s-polarisation / mirror deflection / fixed incidence / experiment details see 10.1107/S1600576724002887, except for sample detector distance being 655.7mm",
+        "incident_angle": {
+          "magnitude": 0.07,
+          "unit": "deg"
+        },
+        "polarization": "other",
+        "wavelength": {
+          "magnitude": 0.827,
+          "unit": "Angstrom"
+        }
+      },
+      "scheme": "angle-dispersive"
+    },
+    "Sample": {
+      "category": "vapour / liquid interface",
+      "composition": "~60nmol 1,2-Dipalmitoyl-sn-glycero-3-phosphoglycerol - sodium salt / 300mL subphase with 10mM tris-HCl, 0.05mM EDTA-Na2, pH 7.3",
+      "description": "1,2-Dipalmitoyl-sn-glycero-3-phosphoglycerol (DPPG) monolayer on the buffer surface containing 10mM tris-HCl, 0.05mM EDTA-Na2, pH 7.3 titrated by 1M NaOH",
+      "environment": [
+        "customized Kibron G4 Langmuir trough (P08 version)"
+      ],
+      "name": "1,2-Dipalmitoyl-sn-glycero-3-phosphoglycerol - sodium salt / 10mM tris-HCl, 0.05mM EDTA-Na2, pH 7.3",
+      "sample_parameters": {
+        "surface_pressure": {
+          "magnitude": 35.0,
+          "unit": "mN/m"
+        },
+        "temperature": {
+          "magnitude": 295.0,
+          "unit": "K"
+        }
+      }
+    }
+  },
+  "sourceFolder": "/OpenPortal/public-data/ChenShen-GIXOSmeasurementproofofconceptofpseudoreflectivity-5675188953864989928",
+  "type": "raw"
+}
