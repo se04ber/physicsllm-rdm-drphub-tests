@@ -1,0 +1,51 @@
+version: 0.9.0
+
+# C5 metadata gate self-test.
+#
+# Runnable with nothing else in place: no secrets, no network, no registry
+# image, no S4P, no MCP server. Python standard library only, on the stock
+# image.
+#
+# Reproducibility note: `python:3.12-slim` is a moving tag. For a pinned run,
+# replace it with the digest form below and record the digest in the card:
+#   environment: 'python@sha256:<digest>'
+
+inputs:
+  files:
+    - demo.py
+    - render_figure.py
+    - run_eval.py
+    - validate_bundle.py
+    - manifest.json
+    - datasets/cases.jsonl
+    - contexts/project_context.json
+    - metrics/metric_set.json
+    - golden_label/scicat_dataset_metadata.json
+    - ro-crate/metadata.json
+    - configs/run_config.json
+    - LICENSE
+    - CITATION.cff
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: score
+        environment: 'python:3.12-slim'
+        commands:
+          # Validates the bundle, then scores it twice - once against faithful
+          # predictions, once against fabricated ones - and compares.
+          - python demo.py
+
+      - name: figure
+        environment: 'python:3.12-slim'
+        commands:
+          - python render_figure.py
+
+outputs:
+  files:
+    - results/summary.json
+    - results/figure.svg
+    - results/validation/validation.json
+    - results/faithful/evaluation.json
+    - results/fabricated/evaluation.json

@@ -1,0 +1,95 @@
+{
+  "manifest_version": "physicsllm.upload_manifest.v1",
+  "upload_id": "reflectivity_gixos_p08",
+  "label": "GIXOS-derived pseudo reflectivity (PETRA III P08) - metadata suggestion benchmark",
+  "owner": "desy_c5",
+  "visibility": "collaboration",
+  "benchmark_suite": "metadata_suggestion",
+
+  "workflow": {
+    "domain": "C5",
+    "mode": "metadata_suggestion",
+    "intent": "score_suggested_metadata_against_a_published_scicat_record",
+    "runtime_config": "configs/run_config.json",
+    "agent": "rdm_mcp"
+  },
+
+  "storage": {
+    "profile": "hifis_webdav",
+    "root_hint": "/pnfs/desy.de/hifis-storage/punch/physicsllm/01Benchmarks",
+    "target_rel": "reflectivity_gixos_p08",
+    "webdav_base_url": "https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/reflectivity_gixos_p08"
+  },
+
+  "dataset": {
+    "path": "datasets/cases.jsonl",
+    "format": "jsonl",
+    "case_count": 6,
+    "schema_hint": "one case per metadata field to suggest; expected values come from golden_label/"
+  },
+
+  "contexts": [
+    { "path": "contexts/project_context.json", "kind": "project_context", "required": true }
+  ],
+
+  "ground_truth": {
+    "path": "golden_label/scicat_dataset_metadata.json",
+    "kind": "published_catalogue_record",
+    "source": "SciCat public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4",
+    "note": "A real published record, not a hand-written answer key. Fields scored against it are owner, contactEmail, description, datasetName, type, creationTime."
+  },
+
+  "metrics": {
+    "path": "metrics/metric_set.json",
+    "required": [
+      "exit_code_zero",
+      "workflow_terminal_status",
+      "workflow_audit_paths",
+      "forbidden_values_absent",
+      "expected_field_exact_match"
+    ],
+    "optional": [
+      "workflow_semantic_closeness_pass",
+      "runtime_within_budget"
+    ],
+    "research_only": [
+      "deepeval"
+    ]
+  },
+
+  "guardrails": {
+    "forbidden_values": [
+      "invented_pnfs_path",
+      "unknown_beamline",
+      "unapproved_write"
+    ],
+    "required_evidence_paths": [
+      "header/scicat_dataset.json",
+      "header/reflectivity_header.ort"
+    ],
+    "allow_external_network": false
+  },
+
+  "outputs": {
+    "results_rel": "results/experiments/reflectivity_gixos_p08",
+    "publish_layout": "experiment",
+    "retention_days": 730
+  },
+
+  "reproducibility": {
+    "fixture_profile": "local",
+    "checksum_required": true,
+    "notes": "Deterministic field comparison is the gate. DeepEval GEval runs beside it as research_only and never decides pass or fail."
+  },
+
+  "ro_crate": {
+    "profile": "benchmark-bundle",
+    "path": "ro-crate/metadata.json"
+  },
+
+  "madmp_export": {
+    "enabled": false,
+    "schema_version": "https://w3id.org/dmp/bundle#",
+    "source": "context_tree+scicat"
+  }
+}

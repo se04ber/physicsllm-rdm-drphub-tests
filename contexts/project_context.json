@@ -1,0 +1,24 @@
+{
+  "project_id": "reflectivity_gixos_p08",
+  "group": "Reflectivity",
+  "facility": "PETRA III",
+  "beamline": "P08",
+  "instrument": "Langmuir trough GID setup",
+  "technique": "grazing incidence off-specular scattering (GIXOS)",
+  "probe": "x-ray",
+  "sample": "DPPG monolayer on tris-EDTA buffer (pH 7.3)",
+  "sample_parameters": "35 mN/m, 295 K",
+  "formats": [".ort", ".dat", ".h5"],
+  "catalogue": {
+    "name": "SciCat",
+    "record_pid": "public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4",
+    "published": true
+  },
+  "schema": {
+    "registry_id": "Reflectivity",
+    "status": "verified",
+    "sisyphos_native": true
+  },
+  "mappings": ["reflectivity_nexus_v1", "reflectivity_orso_v1"],
+  "notes": "Context describes where the data came from. It deliberately does not contain the answers being scored - those live only in golden_label/."
+}

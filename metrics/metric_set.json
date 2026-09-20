@@ -1,0 +1,48 @@
+{
+  "name": "reflectivity_gixos_p08_metrics",
+  "domain": "C5",
+  "purpose": "Score suggested metadata against a published SciCat record. Deterministic comparison gates; a judged metric runs beside it and never gates.",
+
+  "metrics": [
+    "exit_code_zero",
+    "workflow_terminal_status",
+    "workflow_audit_paths",
+    "forbidden_values_absent",
+    "expected_field_exact_match"
+  ],
+  "optional_metrics": [
+    "workflow_semantic_closeness_pass",
+    "runtime_within_budget"
+  ],
+
+  "gates": {
+    "required": [
+      "exit_code_zero",
+      "workflow_terminal_status",
+      "workflow_audit_paths",
+      "forbidden_values_absent",
+      "expected_field_exact_match"
+    ],
+    "optional": [
+      "workflow_semantic_closeness_pass",
+      "runtime_within_budget"
+    ],
+    "research_only": [
+      "deepeval"
+    ]
+  },
+
+  "deepeval": {
+    "metric_set_ref": "configs/metrics/deepeval.metrics.meeting.json",
+    "id": "deepeval_meeting_geval_v1",
+    "metric": "geval",
+    "name": "SOTA Task Satisfaction",
+    "criteria": "Determine whether the actual output satisfies the expected output and task constraints.",
+    "threshold": 0.7,
+    "judge_model": "",
+    "applies_to_cases": [
+      "reflectivity_gixos_p08_description"
+    ],
+    "note": "judge_model is deliberately unset here - it is a deployment choice, and a bundle that hard-codes a judge is not portable. Free-text fields are the only cases a judge is asked about; every other case is decided by exact comparison."
+  }
+}

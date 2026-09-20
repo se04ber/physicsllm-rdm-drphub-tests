@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this benchmark card, please cite it as below."
+title: "C5 metadata gate self-test — GIXOS pseudo-reflectivity (PETRA III P08)"
+abstract: >-
+  A controlled self-test for automated research-metadata suggestion. The same
+  benchmark bundle is scored twice against a published SciCat record used
+  unmodified as ground truth — once against faithful predictions, once against
+  predictions that truncate one field and fabricate another — demonstrating
+  that the deterministic gate discriminates between them without any LLM judge
+  participating in the verdict.
+type: software
+license: CC-BY-4.0
+keywords:
+  - research data management
+  - metadata quality
+  - benchmark
+  - reproducibility
+  - PaN
+  - PETRA III
+authors:
+  - name: "PhysicsLLM C.5, Deutsches Elektronen-Synchrotron DESY"
+    website: "https://physics-llm.erumdatahub.de/"
+references:
+  - type: data
+    title: >-
+      GIXOS-derived pseudo reflectivity of DPPG monolayer on tris-EDTA buffer
+      surface (pH 7.3) at pi = 35mN/m, 295K
+    authors:
+      - family-names: Shen
+        given-names: Chen
+    notes: >-
+      SciCat public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4. Measured at
+      PETRA III, beamline P08, Langmuir trough GID setup. Included verbatim
+      under golden_label/ and used as evaluation ground truth.

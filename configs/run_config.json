@@ -1,0 +1,14 @@
+{
+  "dataset_id": "reflectivity_gixos_p08",
+  "use_case_id": "metadata_suggestion_against_published_record",
+  "mode": "c5.metadata_suggestion",
+  "profile": "local",
+  "deepeval_metrics": "metrics/metric_set.json",
+  "judge_model": "",
+  "env": {
+    "PHYSICS_LLM_DATA_ROOT": "",
+    "RDM_GRAPH_ENABLED": "false",
+    "RDM_LIVE_UPLOAD_ENABLED": "false"
+  },
+  "notes": "judge_model and PHYSICS_LLM_DATA_ROOT are left empty on purpose: both are deployment choices. A bundle that hard-codes them stops being portable, which is the property this format exists to keep."
+}

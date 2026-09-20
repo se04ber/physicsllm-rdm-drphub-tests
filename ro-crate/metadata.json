@@ -1,0 +1,85 @@
+{
+  "@context": "https://w3id.org/ro/crate/1.1/context",
+  "@graph": [
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/crate/1.1"
+      },
+      "about": {
+        "@id": "./"
+      }
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "name": "GIXOS-derived pseudo reflectivity (PETRA III P08) - metadata suggestion benchmark",
+      "description": "A benchmark bundle for scoring suggested metadata against a published SciCat record. Six cases over one real, publicly available reflectivity dataset.",
+      "license": {
+        "@id": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "hasPart": [
+        {
+          "@id": "datasets/cases.jsonl"
+        },
+        {
+          "@id": "contexts/project_context.json"
+        },
+        {
+          "@id": "metrics/metric_set.json"
+        },
+        {
+          "@id": "golden_label/scicat_dataset_metadata.json"
+        },
+        {
+          "@id": "results/figure.svg"
+        }
+      ],
+      "mentions": {
+        "@id": "https://doi.org/10.17199/scicat/public-data"
+      }
+    },
+    {
+      "@id": "datasets/cases.jsonl",
+      "@type": "File",
+      "encodingFormat": "application/jsonl",
+      "name": "Benchmark cases",
+      "description": "One case per metadata field. Five are scored by exact comparison; one free-text field is the only case a judge is asked about."
+    },
+    {
+      "@id": "contexts/project_context.json",
+      "@type": "File",
+      "encodingFormat": "application/json",
+      "name": "Project context",
+      "description": "Provenance of the measurement. Contains no scored answers."
+    },
+    {
+      "@id": "metrics/metric_set.json",
+      "@type": "File",
+      "encodingFormat": "application/json",
+      "name": "Metric set",
+      "description": "Deterministic gates, optional metrics, and deepeval as research_only."
+    },
+    {
+      "@id": "golden_label/scicat_dataset_metadata.json",
+      "@type": "File",
+      "encodingFormat": "application/json",
+      "name": "Ground truth",
+      "description": "The published SciCat record public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4, used unmodified as the answer key.",
+      "isBasedOn": {
+        "@id": "https://scicat.desy.de/datasets/public-data%2Fcb2f2cf8-3b59-4592-a383-706c2c91cfc4"
+      }
+    },
+    {
+      "@id": "results/figure.svg",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "encodingFormat": "image/svg+xml",
+      "name": "Gate discrimination figure",
+      "description": "Field-by-field comparison of the faithful and fabricated arms, emitted by render_figure.py using only the standard library."
+    }
+  ]
+}
