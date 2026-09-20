@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import collections
 import json
 import os
 import pathlib
@@ -81,6 +82,24 @@ def load_deepeval():
     return (Golden, LLMTestCase, DeterministicFieldMatch), None
 
 
+def system_under_test(root: pathlib.Path, suite: str, use_case: str) -> dict:
+    """What produces the answer, and therefore which metrics can apply.
+
+    DeepEval's own Golden already encodes the distinction: a golden with
+    `actual_output` filled is an artifact to compare, and one without it is
+    a case the system under test must answer. `system.json` records which
+    system that is, so the dataset stays about the data.
+    """
+    path = root / suite / "use_cases" / use_case / "system.json"
+    if not path.is_file():
+        return {"kind": "static_artifact", "declared": False,
+                "note": "no system.json; assuming the cases carry actual_output"}
+    cfg = json.loads(path.read_text())
+    cfg["declared"] = True
+    cfg["path"] = str(path)
+    return cfg
+
+
 def discover(root: pathlib.Path):
     """Every cases.jsonl in the tree, with the identifiers its path encodes."""
     for path in sorted(root.glob("*/datasets/*/*/cases.jsonl")):
@@ -132,11 +151,20 @@ def main() -> int:
 
     for entry in found:
         rows = [json.loads(l) for l in entry["cases"].read_text().splitlines() if l.strip()]
+        sut = system_under_test(root, entry["suite"], entry["use_case_id"])
+        needs_generation = [r for r in rows if not (r.get("actual_output") or "").strip()]
+        has_reference = any((r.get("expected_output") or "").strip() for r in rows)
         scored, exact_fail, norm_fail = [], [], []
 
         for row in rows:
             field = (row.get("additional_metadata") or {}).get("field") or row.get("name") or "value"
             want, got = row.get("expected_output") or "", row.get("actual_output") or ""
+
+            # A case the system under test never produced is not a wrong
+            # answer - it is an unrun case. Scoring "" against the golden
+            # would report a content difference that nothing measured.
+            if not got.strip():
+                continue
 
             if bits is not None:
                 Golden, LLMTestCase, Det = bits
@@ -160,14 +188,34 @@ def main() -> int:
                            "normalised": ok_norm, "reason": reason})
 
         result = {
+            "system_under_test": {
+                "kind": sut.get("kind"), "declared": sut.get("declared"),
+                "cases_needing_generation": len(needs_generation),
+                "reference_present": has_reference,
+            },
             "suite": entry["suite"], "use_case_id": entry["use_case_id"],
             "dataset_id": entry["dataset_id"], "cases": len(rows),
+            "cases_scored": len(scored),
             "exact_failures": exact_fail,
             "absorbed_by_normalisation": [f for f in exact_fail if f not in norm_fail],
             "real_differences": norm_fail,
-            "gate": "pass" if not norm_fail else "fail",
+            # Three outcomes, not two: nothing scored is not a pass, and it
+            # is not a failure of the system either.
+            "gate": ("not-scored" if not scored else
+                     "pass" if not norm_fail else "fail"),
             "fields": scored,
         }
+        # Say plainly what was not done, rather than reporting a pass that
+        # only means "nothing was run".
+        if needs_generation:
+            result["not_scored"] = (
+                f"{len(needs_generation)} case(s) have no actual_output. "
+                f"Generating them needs the system under test "
+                f"(kind={sut.get('kind')}), which this runner does not invoke yet.")
+        if not has_reference:
+            result["reference_free_only"] = (
+                "no expected_output in this dataset, so reference-based metrics "
+                "do not apply; only no_fabricated_values / schema_conformance would")
         report["datasets"].append(result)
 
         if a.write_results:
@@ -183,9 +231,11 @@ def main() -> int:
                 "deepeval": report["deepeval"],
             }, indent=2) + "\n")
 
+    tally = collections.Counter(d["gate"] for d in report["datasets"])
+    # "0 passed" reads as "everything failed" when some of it was never run.
     report["verdict"] = (
-        f"{len(found)} dataset(s); "
-        f"{sum(1 for d in report['datasets'] if d['gate'] == 'pass')} passed the gate")
+        f"{len(found)} dataset(s); {tally['pass']} passed the gate, "
+        f"{tally['fail']} failed, {tally['not-scored']} not scored")
     finish(report)
     return 0
 
@@ -199,8 +249,16 @@ def finish(report: dict) -> None:
     print("deepeval: " + ("unavailable - " + str(v['error']) if not v["available"] else "present"))
     print(f"judge:    {report['judge_model'] or 'none (deterministic tiers only)'}\n")
     for d in report.get("datasets", []):
+        sut = d.get("system_under_test") or {}
+        counted = (f"{d['cases']} cases" if d.get("cases_scored", d["cases"]) == d["cases"]
+                   else f"{d.get('cases_scored', 0)}/{d['cases']} cases scored")
         print(f"  {d['suite']}/{d['use_case_id']}/{d['dataset_id']}  "
-              f"{d['cases']} cases  gate={d['gate'].upper()}")
+              f"{counted}  gate={d['gate'].upper()}  "
+              f"[under test: {sut.get('kind')}]")
+        if d.get("not_scored"):
+            print(f"      NOT SCORED: {d['not_scored']}")
+        if d.get("reference_free_only"):
+            print(f"      no reference: {d['reference_free_only']}")
         if d["absorbed_by_normalisation"]:
             print(f"      format only, absorbed: {d['absorbed_by_normalisation']}")
         if d["real_differences"]:
