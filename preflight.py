@@ -25,14 +25,15 @@ import urllib.error
 import urllib.request
 
 # Checked reachable from outside the DESY network on 2026-09-20. The last
-# entry is ours and is expected to fail from outside - it is in the list as a
-# control, so a run that fails everything can be told apart from one where
-# only the intranet-only service is unreachable.
+# entry is ours. It was listed as an intranet-only control and that was wrong:
+# it answers HTTP 200 from the public internet, and only certificate
+# verification fails. curl reports 000 for a TLS failure exactly as for no
+# route, which is how the mistake was made.
 DOORS = [
     ("dcache-doma-door01.desy.de", 443, "https", "primary WebDAV door"),
     ("dcache-desy-webdav.desy.de", 2880, "https", "second WebDAV door"),
     ("hifis-storage-web.desy.de", 443, "https", "browser interface"),
-    ("physicsllm-rdm.desy.de", 8443, "https", "our own service (intranet-only: expected to fail here)"),
+    ("physicsllm-rdm.desy.de", 8443, "https", "our own MCP service (public; TLS cert self-signed until 21.09)"),
 ]
 
 CTX = ssl.create_default_context()
