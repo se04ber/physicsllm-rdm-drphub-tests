@@ -1,0 +1,4 @@
+{"request": "find datasets from P08 reflectivity measurements", "expected_intent": "catalog_search", "expected_routed": true, "source": "CAPABILITY_OFFERS['catalog_search']['say'] in routing.py"}
+{"request": "inspect the hdf5 file and tell me the layout", "expected_intent": "data_inspection", "expected_routed": true, "source": "CAPABILITY_OFFERS['data_inspection']['say'] in routing.py"}
+{"request": "which schema should I use for reflectivity measurements", "expected_intent": "schema_discovery", "expected_routed": true, "source": "CAPABILITY_OFFERS['schema_discovery']['say'] in routing.py"}
+{"request": "show me the header files in this storage folder", "expected_intent": "file_access", "expected_routed": true, "source": "CAPABILITY_OFFERS['file_access']['say'] in routing.py"}

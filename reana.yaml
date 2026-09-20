@@ -13,12 +13,20 @@ version: 0.9.0
 inputs:
   files:
     - run_deepeval.py
+    - eval_live.py
+    - data/routing_cases.jsonl
     - data/golden_label.json
     - data/mapped_header_draft.json
     - data/SOURCE.json
     - manifest.json
     - LICENSE
     - CITATION.cff
+
+  parameters:
+    mcp_base: https://physicsllm-rdm.desy.de:8443
+    # The server's certificate is self-signed until the official one lands;
+    # set this back to "verify" then, and a green run proves it worked.
+    tls_mode: insecure
 
 workflow:
   type: serial
@@ -35,6 +43,14 @@ workflow:
         commands:
           - DEEPEVAL_TELEMETRY_OPT_OUT=YES python run_deepeval.py --data data --out results
 
+      # Ask the running system to decide something now, rather than only
+      # scoring a draft produced earlier. Skips cleanly without a token.
+      - name: live
+        environment: 'python:3.12-slim'
+        commands:
+          - python eval_live.py --base ${mcp_base} --tls ${tls_mode} --data data --out results
+
 outputs:
   files:
     - results/deepeval_report.json
+    - results/live_routing.json
