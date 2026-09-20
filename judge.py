@@ -17,7 +17,23 @@ import os
 import urllib.error
 import urllib.request
 
-BASE = os.environ.get("LLM_BASE_URL", "https://localai.desy.de/v1").rstrip("/")
+def _first(*names: str, default: str = "") -> str:
+    """First of these environment variables that is actually set.
+
+    The REANA secret store for this account already carries LOCAL_LLM_*,
+    so a card that only looked for LLM_API_KEY silently skipped the judge
+    while a perfectly good credential sat next to it. Prefer the explicit
+    names, fall back to the ones the store already has.
+    """
+    for name in names:
+        value = (os.environ.get(name) or "").strip()
+        if value:
+            return value
+    return default
+
+
+BASE = _first("LLM_BASE_URL", "LOCAL_LLM_BASE_URL",
+              default="https://localai.desy.de/v1").rstrip("/")
 
 
 class JudgeUnavailable(RuntimeError):
@@ -26,17 +42,17 @@ class JudgeUnavailable(RuntimeError):
 
 def _model_name() -> str:
     """The gateway namespaces its models; accept either spelling."""
-    raw = (os.environ.get("DEEPEVAL_JUDGE_MODEL") or "").strip()
+    raw = _first("DEEPEVAL_JUDGE_MODEL", "LOCAL_LLM_MODEL")
     if not raw:
-        raise JudgeUnavailable("DEEPEVAL_JUDGE_MODEL unset")
+        raise JudgeUnavailable("no judge model: set DEEPEVAL_JUDGE_MODEL or LOCAL_LLM_MODEL")
     return raw if "/" in raw else f"vllm/{raw}"
 
 
 def chat(prompt: str, *, max_tokens: int = 1200, temperature: float = 0.0) -> dict:
     """One completion. Returns the text and what the gateway actually served."""
-    key = (os.environ.get("LLM_API_KEY") or "").strip()
+    key = _first("LLM_API_KEY", "LOCAL_LLM_API_KEY")
     if not key:
-        raise JudgeUnavailable("LLM_API_KEY unset")
+        raise JudgeUnavailable("no API key: set LLM_API_KEY or LOCAL_LLM_API_KEY")
 
     body = json.dumps({
         "model": _model_name(),
