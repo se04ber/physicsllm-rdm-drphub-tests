@@ -27,13 +27,17 @@ workflow:
       - name: install
         environment: 'python:3.12-slim'
         commands:
-          # Never fail the run on the install: the script reports its absence.
-          - pip install --no-cache-dir --quiet deepeval || echo "deepeval install failed - continuing without it"
+          # The C4P job runs with an unwritable HOME - the first real run died
+          # on [Errno 13] Permission denied: '/.local' when pip fell back to
+          # the user site directory. Install into the workspace instead, which
+          # the next step picks up via PYTHONPATH. Never fail the run on this:
+          # the script reports the absence and computes the same verdict.
+          - HOME="$PWD" pip install --no-cache-dir --quiet --target "$PWD/.deps" deepeval || echo "deepeval install failed - continuing without it"
 
       - name: score
         environment: 'python:3.12-slim'
         commands:
-          - DEEPEVAL_TELEMETRY_OPT_OUT=YES python run_deepeval.py --data data --out results
+          - HOME="$PWD" PYTHONPATH="$PWD/.deps" DEEPEVAL_TELEMETRY_OPT_OUT=YES python run_deepeval.py --data data --out results
 
 outputs:
   files:
