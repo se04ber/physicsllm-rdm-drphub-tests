@@ -136,10 +136,14 @@ def main() -> int:
     ap.add_argument("--query", default="reflectivity")
     ap.add_argument("--limit", type=int, default=5)
     ap.add_argument("--out", default="results")
-    ap.add_argument("--insecure", action="store_true",
-                    help="proceed past a certificate that does not verify - the server "
-                         "currently presents a self-signed one; recorded in the report")
+    ap.add_argument("--tls", choices=("verify", "insecure"), default="verify",
+                    help="'insecure' proceeds past a certificate that does not verify. "
+                         "Needed only while the server presents a self-signed cert; "
+                         "flip back to 'verify' once the official one is installed. "
+                         "Either way the certificate is inspected and recorded.")
+    ap.add_argument("--insecure", action="store_true", help="alias for --tls insecure")
     a = ap.parse_args()
+    a.insecure = a.insecure or a.tls == "insecure"
 
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     token = os.environ.get("RDM_MCP_BEARER_TOKEN", "")
@@ -226,7 +230,7 @@ def main() -> int:
     elif not tls_usable:
         report["verdict"] = ("reachable, but the certificate does not verify (self-signed). "
                              "This is a certificate problem, NOT a network problem - "
-                             "re-run with --insecure to test the layers above it")
+                             "set --tls insecure to test the layers above it")
     elif not ok("mcp_initialize"):
         report["verdict"] = "reachable, but the MCP handshake failed - check the bearer token"
     elif not ok("search"):

@@ -21,6 +21,11 @@ inputs:
     mcp_base: https://physicsllm-rdm.desy.de:8443
     query: reflectivity
     limit: 5
+    # The server presents a self-signed certificate today, so a verifying
+    # client stops at TLS and never reaches MCP. This is the one knob that
+    # gets past it - set it back to "verify" the moment the official
+    # certificate is installed, and the run will prove that it worked.
+    tls_mode: insecure
 
 workflow:
   type: serial
@@ -36,7 +41,7 @@ workflow:
         c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
         commands:
           - mkdir -p results
-          - python3 probe_mcp.py --base ${mcp_base} --query "${query}" --limit ${limit} --out results
+          - python3 probe_mcp.py --base ${mcp_base} --tls ${tls_mode} --query "${query}" --limit ${limit} --out results
 
 outputs:
   files:
