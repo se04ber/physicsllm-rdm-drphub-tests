@@ -40,19 +40,47 @@ cmd_setup() {
   echo "A browser will open for the Helmholtz AAI consent. That is the one"
   echo "human step in this flow, and it is meant to be."
   oidc-gen --iss "$ISSUER" \
-           --scope "openid profile email offline_access eduperson_entitlement" \
+           --scope "openid profile email offline_access eduperson_entitlement storage.read:/punch/" \
            "$ACCOUNT"
   echo "done. Now run: $0 check"
+}
+
+# Decode a JWT payload. JWTs use base64url with no padding, which is why a
+# plain `base64 -d` on a token segment fails with "invalid input".
+claims() {
+  python3 -c '
+import base64,json,sys
+seg=sys.argv[1].split(".")[1]
+seg+="="*(-len(seg)%4)
+print(json.dumps(json.loads(base64.urlsafe_b64decode(seg))))' "$1"
 }
 
 cmd_check() {
   local t; t="$(token)"
   echo "token: acquired for '$ACCOUNT'"
+
+  # Scope check first: as of 2026-09-20 the Helmholtz AAI advertises exactly
+  # one storage scope, storage.read:/punch/.* - there is NO write scope to
+  # ask for. A PUT will be denied no matter how the account was generated.
+  local sc
+  sc=$(claims "$t" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("scope",""))' 2>/dev/null || true)
+  echo "granted scope: ${sc:-<could not decode>}"
+  case "$sc" in
+    *storage.create:*|*storage.modify:*|*storage.put:*)
+      echo "write scope: present - upload over an AAI token should work" ;;
+    *storage.read:*)
+      echo "write scope: ABSENT (read only). This is an issuer limitation, not your setup."
+      echo "     login.helmholtz.de advertises only  storage.read:/punch/.*"
+      echo "     Writing needs a different credential - see README, 'Why upload is blocked'." ;;
+    *)
+      echo "write scope: no storage scope at all - request storage.read:/punch/... in oidc-gen" ;;
+  esac
+
   local code
   code=$(curl -s -o /dev/null -w '%{http_code}' -X PROPFIND \
          -H "Authorization: Bearer $t" -H 'Depth: 0' "$BASE/") || true
   case "$code" in
-    207) echo "PROPFIND $BASE/ -> 207  VO membership is effective. You can upload." ;;
+    207) echo "PROPFIND $BASE/ -> 207  VO membership is effective. Reads will work." ;;
     401) echo "PROPFIND $BASE/ -> 401  token rejected. Re-run setup, or the token expired." ;;
     403) echo "PROPFIND $BASE/ -> 403  authenticated but not authorised."
          echo "     This is the VO approval step: punch AND physicsllm must both be granted." ;;
@@ -62,6 +90,8 @@ cmd_check() {
 }
 
 cmd_push() {
+  echo "NOTE: as of 2026-09-20 the Helmholtz AAI issues no write scope for /punch," >&2
+  echo "      so this will fail with 'Permission denied' on PUT. Run '$0 check'." >&2
   local src="${1:-}" dest="${2:-}"
   [ -n "$src" ] && [ -n "$dest" ] || die "usage: $0 push SRC_DIR DEST_REL_PATH"
   [ -d "$src" ] || die "not a directory: $src"

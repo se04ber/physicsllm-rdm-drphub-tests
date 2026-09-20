@@ -4,7 +4,7 @@ Two directions, and they are not symmetric. Read the one you need.
 
 | | Who does it | Where it runs | Automatable |
 | --- | --- | --- | --- |
-| **In** — your dataset onto S4P | your agent, with your token | your own machine | yes — but not from a card |
+| **In** — your dataset onto S4P | your agent, with your token | your own machine | **blocked at the IdP — see below** |
 | **Out** — a run's results back to S4P | the workflow | wherever REANA put it | yes, one step |
 
 The asymmetry is about *where* the work runs, not about whether it can be
@@ -27,6 +27,47 @@ rather than forking them, so there is one place to fix when an endpoint moves.
 
 ## Direction 1 — your data onto S4P
 
+### Why upload is blocked right now
+
+Checked against the issuer's own discovery document on 2026-09-20:
+`https://login.helmholtz.de/oauth2/.well-known/openid-configuration` lists
+exactly **one** storage scope in `scopes_supported`:
+
+```
+storage.read:/punch/.*
+```
+
+There is no `storage.create`, no `storage.modify`, no `storage.stage` — and no
+`storage.put`, which is not a WLCG profile scope name in any case. So a request
+like
+
+```bash
+oidc-gen punch7 --scope="... storage.read:/punch/general/ storage.put:/punch/general/"
+```
+
+returns a token whose granted `scope` silently contains only the read half, and
+the subsequent `PUT` fails with `Permission denied`. **This is an issuer
+limitation, not a mistake in your setup, and no oidc-gen flag fixes it.**
+
+VO membership is not the problem: a working token carries
+`urn:geant:dfn.de:nfdi.degroup:PUNCH4NFDI`, `…:physicsllm` and `…:alps`
+entitlements and its `storage.read:/punch/general/` claim comes back
+`authorized`.
+
+Until the AAI issues a write scope, writing needs a different credential —
+a dCache **macaroon** minted at the door, X.509/VOMS, or a local dCache
+account. `./s4p-transfer.sh check` now reports which storage scopes your token
+actually carries, so you can see this for yourself rather than inferring it
+from a 403.
+
+Two related notes from the same token:
+
+- Lifetime is **~66 minutes** (`exp - iat` = 4000 s). A transfer that outruns
+  it must be re-run; `rclone` skips what it already moved.
+- `aud` is `public-oidc-agent`, not a storage resource. If dCache is ever
+  configured to enforce the WLCG audience rule, these tokens would be
+  rejected even for reads.
+
 ### What you need first
 
 Three things. Two are one-off and slow because a person approves them; only
@@ -38,6 +79,9 @@ the third is work.
    request them before the day you need them. This is the step that takes
    real time — hours to days, not minutes.
 3. **A transfer client on your machine**: `oidc-agent` plus `rclone`.
+
+Never pass `curl -k` when sending a bearer token: it disables certificate
+checking, so a machine-in-the-middle can collect the token.
 
 `preflight.py` in this card tells you which of the three you are missing, by
 testing rather than by asking you. Run it first.
