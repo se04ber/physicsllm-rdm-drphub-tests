@@ -153,7 +153,8 @@ def main() -> int:
         import deepeval
         engine["version"] = getattr(deepeval, "__version__", "unknown")
 
-    judge = os.environ.get("DEEPEVAL_JUDGE_MODEL", "").strip()
+    judge = (os.environ.get("DEEPEVAL_JUDGE_MODEL")
+             or os.environ.get("LOCAL_LLM_MODEL") or "").strip()
     report["judge_model"] = judge or None
 
     exact_fail, norm_fail = [], []
@@ -199,7 +200,7 @@ def main() -> int:
 
         if not judge:
             entry["judged"] = {"skipped": True,
-                               "reason": "DEEPEVAL_JUDGE_MODEL unset - a judge is a "
+                               "reason": "no judge model (DEEPEVAL_JUDGE_MODEL / LOCAL_LLM_MODEL) - a judge is a "
                                          "deployment choice, not a bundle property"}
         else:
             # Research-only tier. It is scored on every field, including the
