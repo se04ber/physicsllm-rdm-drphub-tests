@@ -201,6 +201,15 @@ def main() -> int:
             entry["judged"] = {"skipped": True,
                                "reason": "DEEPEVAL_JUDGE_MODEL unset - a judge is a "
                                          "deployment choice, not a bundle property"}
+        else:
+            # Research-only tier. It is scored on every field, including the
+            # ones the deterministic gate already passed, so the two can be
+            # compared - but it never contributes to the verdict.
+            try:
+                from judge import judge_field
+                entry["judged"] = judge_field(field, want, got)
+            except Exception as exc:  # noqa: BLE001 - a judge must never fail the card
+                entry["judged"] = {"skipped": True, "reason": f"{type(exc).__name__}: {exc}"}
         report["fields"].append(entry)
 
     report["summary"] = {
@@ -229,6 +238,22 @@ def main() -> int:
     print(f"absorbed by norm.:   {s['absorbed_by_normalisation'] or 'none'}")
     print(f"real differences:    {s['real_content_differences'] or 'none'}")
     print(f"deterministic gate:  {s['gate'].upper()}")
+
+    scored = [e for e in report["fields"]
+              if isinstance(e.get("judged"), dict) and e["judged"].get("usable")]
+    if scored:
+        served = sorted({str(e["judged"].get("model_served")) for e in scored})
+        asked = sorted({str(e["judged"].get("model_requested")) for e in scored})
+        print(f"\njudged tier — research only, never gating")
+        print(f"  requested {asked} · served {served}")
+        if set(asked) != {f"vllm/{m}" for m in served} and served != asked:
+            print("  NOTE: the gateway did not serve the model that was asked for.")
+        for e in scored:
+            j = e["judged"]
+            mark = "" if e["normalised"]["pass"] else "   <- deterministic gate said FAIL"
+            print(f"  {e['field']:<22} {str(j.get('verdict')):<11} {j.get('score')}{mark}")
+            if not e["normalised"]["pass"]:
+                print(f"      judge: {j.get('reason')}")
     return 0
 
 
