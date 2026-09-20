@@ -4,13 +4,19 @@ Two directions, and they are not symmetric. Read the one you need.
 
 | | Who does it | Where it runs | Automatable |
 | --- | --- | --- | --- |
-| **In** — your dataset onto S4P | you, once | your own machine | no, and that is fine |
+| **In** — your dataset onto S4P | your agent, with your token | your own machine | yes — but not from a card |
 | **Out** — a run's results back to S4P | the workflow | wherever REANA put it | yes, one step |
 
-The asymmetry is the point. Getting data **in** needs a credential that is
-yours and an approval that is a human decision, so it stays a human step.
-Getting results **out** happens inside a job that already holds a token and
-already has the files, so it costs one line of YAML.
+The asymmetry is about *where* the work runs, not about whether it can be
+automated. Both directions should be one command. But getting data **in**
+uses a credential that is yours, so it runs where you and your credential
+are — your own machine, ideally driven by the agent's upload mode. Getting
+results **out** happens inside a job that already holds a token and already
+has the files, so it costs one line of YAML.
+
+What does **not** work is uploading your data *through a card*: a card runs on
+C4P, so you would first have to get the data to the card. That is the only
+thing ruled out here.
 
 This card is the tutorial for both, and it runs the checks that prove the
 tutorial still describes reality. Canonical copies of this README and of
