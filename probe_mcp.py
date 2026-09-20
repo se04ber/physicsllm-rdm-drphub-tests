@@ -14,6 +14,10 @@ certificate verification, because the host presents a self-signed certificate
 confused. Pinning to a DESY drone is therefore about provenance and policy,
 not about reachability.
 
+An official certificate was requested on 2026-09-20 and is expected on the
+21st. Once it is installed --insecure should stop being needed; if it is
+still needed after that, the certificate did not land and that is the finding.
+
 Standard library only - the same job showed that pip cannot write to HOME on
 this backend, so a card that needs an install is a card that does not run.
 
