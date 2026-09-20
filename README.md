@@ -45,6 +45,33 @@ This card therefore records `model_requested` **and** `model_served` on every
 judged field, and prints a NOTE when they disagree — otherwise a result would
 silently be attributed to the wrong model.
 
+## The structure this expects — and why these field names
+
+Cases live in the layout the project already uses, and each dataset carries
+its own `cases.jsonl`:
+
+```
+<suite>/datasets/<use_case_id>/<dataset_id>/cases.jsonl
+<suite>/results/experiments/<use_case_id>/<run_id>/     <- written by the run
+```
+
+**`cases.jsonl` is one JSON object per line using DeepEval's own `Golden`
+field names** — `input`, `expected_output`, `actual_output`, `context`,
+`additional_metadata`, `name`, `source_file`. That is the whole point: the
+file loads with `Golden(**row)` and no translation layer, so the dataset is
+portable to anyone already using DeepEval and there is no mapping code to
+drift out of date.
+
+One golden per field being judged. `additional_metadata` carries the
+identifiers the path also encodes — field, dataset_id, use_case_id, suite,
+dataset_pid — so a single case is still self-describing once it is lifted out
+of the tree.
+
+`eval_benchmark.py` walks that tree, scores every dataset that ships cases,
+and writes per-dataset metrics back to `results/experiments/...`. It needs no
+dCache and no MCP server: the paths are identical whether the tree is a local
+mirror or the real one.
+
 ## Tiers
 
 | tier | gating | what it is |

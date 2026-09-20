@@ -1,2 +1,4 @@
 results/
 __pycache__/
+.deps/
+benchmark/*/results/
