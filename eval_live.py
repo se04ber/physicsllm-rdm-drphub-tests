@@ -11,6 +11,12 @@ The cases are not invented. Every routable intent in
 the intent they are filed under is the expected answer. If the router
 cannot route its own documented examples, that is worth knowing.
 
+Two things are scored. `rdm_route_request` answers "did the router send
+this to the right place". `panet_search` answers "does the technique
+vocabulary resolve the words a scientist actually types" - which is the
+concrete example for C.2 and C.3: the SPARQL graph stays behind the tool,
+and the caller asks a question instead of writing a query.
+
 Reads cases from the benchmark tree when one is mounted:
 
     datasets/<use_case_id>/cases.jsonl
@@ -132,6 +138,40 @@ def main() -> int:
         _finish(out, report)
         return 0
 
+    # ---- PaNET term resolution ------------------------------------------
+    # The concrete example for C.2 / C.3: a technique vocabulary reached as
+    # a tool. The SPARQL endpoint stays behind it - the caller asks the
+    # question, not the graph. `raw_sparql_allowed: false` in our own
+    # translation config is the same decision stated from the other side.
+    panet_path = pathlib.Path(a.data) / "panet_cases.jsonl"
+    panet_cases = ([json.loads(x) for x in panet_path.read_text().splitlines() if x.strip()]
+                   if panet_path.is_file() else [])
+    panet_pass = 0
+    rid = 1000
+    for case in panet_cases:
+        rid += 1
+        call = rpc(a.base, "tools/call",
+                   {"name": "panet_search", "arguments": {"query": case["query"]}},
+                   token, rid, ctx)
+        entry: dict = {"query": case["query"], "kind": case["kind"],
+                       "expected_uri": case["expected_uri"]}
+        if not call.get("ok"):
+            entry.update(ok=False, error=call.get("error"))
+            report.setdefault("panet", []).append(entry)
+            continue
+        answer = unwrap(call["body"])
+        hits = answer.get("results") or answer.get("matches") or answer.get("concepts") or []
+        uris = [h.get("uri") for h in hits if isinstance(h, dict)]
+        top = uris[0] if uris else None
+        entry.update(ok=True, top_uri=top, hit_count=len(uris))
+        # An out-of-vocabulary term must return nothing. Inventing a URI is
+        # the failure this case exists to catch.
+        entry["pass"] = (top == case["expected_uri"]) if case["expected_uri"] else not uris
+        panet_pass += entry["pass"]
+        report.setdefault("panet", []).append(entry)
+    if panet_cases:
+        report["panet_verdict"] = f"{panet_pass}/{len(panet_cases)} terms resolved as pinned"
+
     passed = 0
     for index, case in enumerate(cases, start=2):
         want = case.get("expected_intent")
@@ -169,6 +209,15 @@ def _finish(out: pathlib.Path, report: dict) -> None:
     (out / "live_routing.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"Live router over MCP  {report['utc']}")
     print(f"cases: {report['case_count']} from {report['cases_from']}\n")
+    for entry in report.get("panet", []):
+        if not entry.get("ok"):
+            print(f"  ERR  panet {entry['query'][:24]:<26} {str(entry.get('error'))[:52]}")
+            continue
+        mark = "ok  " if entry.get("pass") else "FAIL"
+        got = entry.get("top_uri") or "no match"
+        print(f"  {mark} panet {entry['query'][:24]:<26} {str(got).rsplit('/', 1)[-1]}")
+    if report.get("panet_verdict"):
+        print(f"  -> {report['panet_verdict']}\n")
     for entry in report.get("results", []):
         if not entry.get("ok"):
             print(f"  ERR  {entry['request'][:52]:<54} {str(entry.get('error'))[:60]}")

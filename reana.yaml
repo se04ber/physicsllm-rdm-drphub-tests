@@ -15,6 +15,7 @@ inputs:
     - run_deepeval.py
     - eval_live.py
     - data/routing_cases.jsonl
+    - data/panet_cases.jsonl
     - data/golden_label.json
     - data/mapped_header_draft.json
     - data/SOURCE.json
