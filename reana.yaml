@@ -25,6 +25,10 @@ inputs:
     - configs/run_config.json
     - LICENSE
     - CITATION.cff
+    - publish_results.py
+  parameters:
+    s4p_base: https://dcache-doma-door01.desy.de/punch/physicsllm
+    use_case: c5_metadata_gate
 
 workflow:
   type: serial
@@ -42,6 +46,15 @@ workflow:
         commands:
           - python render_figure.py
 
+      # Archives this run's own results to S4P, so the evidence outlives the
+      # REANA workspace and carries the run id that produced it. Without
+      # S4P_BEARER_TOKEN in the secret store it reports "no token" and exits
+      # 0 - publishing must never be the reason a demo fails.
+      - name: publish
+        environment: 'python:3.12-slim'
+        commands:
+          - python publish_results.py --base ${s4p_base} --use-case ${use_case}
+
 outputs:
   files:
     - results/summary.json
@@ -49,3 +62,4 @@ outputs:
     - results/validation/validation.json
     - results/faithful/evaluation.json
     - results/fabricated/evaluation.json
+    - results/upload_report.json
