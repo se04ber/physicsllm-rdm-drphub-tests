@@ -1,0 +1,8 @@
+{
+  "dataset_pid": "public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4",
+  "dataset_url": "https://public-data.desy.de/datasets/public-data%2Fcb2f2cf8-3b59-4592-a383-706c2c91cfc4",
+  "file_url": "https://hifis-storage.desy.de/OpenPortal/public-data/ChenShen-GIXOSmeasurementproofofconceptofpseudoreflectivity-5675188953864989928/reflectivity.ort",
+  "origdatablock_id": "8a71b971-f102-444f-8215-02366f011fd0",
+  "schema_registry_commit": "4f95b2ddf6c93a1c1de6be4bb21c2ce667a41e42",
+  "sisyphos_commit": "dcdb7a6ff34473c7bb5e063efd8bedd05f776aa0"
+}
