@@ -1,0 +1,40 @@
+version: 0.9.0
+
+# Route A: evaluate a benchmark folder that travels with the card.
+#
+# Use this when the cases and the system under test are in the repository.
+# Nothing is fetched, so the run needs no storage credential.
+
+inputs:
+  files:
+    - eval_harness.py
+    - counting_proxy.py
+  directories:
+    - example
+  parameters:
+    tree: example
+    repeats: "3"
+    # Forwarded verbatim. Open WebUI serves /api/chat/completions rather than
+    # /v1/chat/completions, so nothing is appended to a URL that already names
+    # an endpoint.
+    eval_llm_base_url: https://api.helmholtz-blablador.fz-juelich.de/v1
+    eval_llm_auth_header: Authorization
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: install
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp timeout 180 pip install --no-cache-dir --progress-bar off --target .deps opentelemetry-sdk opentelemetry-api || echo "opentelemetry unavailable - latency will be not_available"
+          - HOME=/tmp timeout 600 pip install --no-cache-dir --progress-bar off --target .deps deepeval==4.2.3 || echo "deepeval unavailable - continuing with deterministic tiers"
+
+      - name: evaluate
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES EVAL_LLM_BASE_URL=${eval_llm_base_url} EVAL_LLM_AUTH_HEADER=${eval_llm_auth_header} python eval_harness.py --tree ${tree} --repeats ${repeats} --out results
+
+outputs:
+  files:
+    - results/eval_report.json
