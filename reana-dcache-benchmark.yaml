@@ -21,7 +21,8 @@ version: 0.9.0
 inputs:
   files:
     - fetch_dcache.py
-    - eval_benchmark.py
+    - evaluate.py
+    - counting_proxy.py
   parameters:
     dcache_base: https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks
     tree: benchmark
@@ -45,9 +46,14 @@ workflow:
       - name: evaluate
         environment: 'python:3.12-slim'
         commands:
-          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES python eval_benchmark.py --tree ${tree} --write-results
+          # evaluate.py rather than eval_benchmark.py: the latter globs for
+          # exactly <suite>/datasets/<use_case>/<dataset>/cases.jsonl, so a
+          # community bundle in any other shape is fetched and then silently
+          # ignored. Observed on 2026-09-21: 51 files came down from
+          # 01Benchmarks and only one of the two bundles was scored.
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES python evaluate.py --tree ${tree} --out results
 
 outputs:
   files:
     - results/fetch_report.json
-    - results/benchmark_report.json
+    - results/eval_report.json
