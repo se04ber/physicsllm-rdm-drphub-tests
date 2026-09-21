@@ -66,6 +66,39 @@ on screen rather than guessed at.
 difference is absorbed by normalisation, and `datasetName` is a real
 difference. A green gate there would mean the comparison was not looking.
 
+### 3. The community path, end to end
+
+```bash
+reana-client run -f reana-dcache-benchmark.yaml -w demo-dcache \
+  -p dcache_base=https://dcache-doma-door01.desy.de/punch/physicsllm/user/<account>/Benchmarks
+```
+
+A bundle uploaded to dCache under your own Helmholtz identity, fetched by
+REANA with a read-only macaroon, scored by DeepEval. Completed 2026-09-21:
+
+```
+fetch        42 files, 319,381 bytes, 0 errors, tls verified
+evaluation   p08_reflectivity, 10 cases, gate=fail
+             real difference: datasetName
+```
+
+**The failing gate is the point.** It is the same verdict the same data gives
+locally: eight of ten fields match, one difference is absorbed by
+normalisation, and `datasetName` genuinely differs. The data went to dCache
+and came back and the answer did not change. A green gate here would mean the
+comparison was not looking.
+
+**The credentials split, and deliberately.** The upload used the user's own
+OIDC token, so it carries real attribution and no service acted on anyone's
+behalf. The fetch used a macaroon scoped to `DOWNLOAD,LIST,READ_METADATA`
+with a path caveat and a one-week expiry, which is the credential that sits
+in REANA and cannot write.
+
+**Mint macaroons at the door root.** Posting the request to a subdirectory
+adds that path as a second caveat, and the pair permits that exact directory
+and nothing beneath it. The resulting 403 reads as a permission problem on
+the data and is not.
+
 ## Timings, measured
 
 | Card | Duration | Why |
@@ -73,7 +106,7 @@ difference. A green gate there would mean the comparison was not looking.
 | `reana-mcp-selfcontained.yaml` | 19 s | installs nothing |
 | `reana-s4p-transfer.yaml` | 22 s | reachability probes only |
 | `reana-eval-harness.yaml` | 7 m 30 s | DeepEval install |
-| `reana-dcache-benchmark.yaml` | 7 m 50 s | DeepEval install, then a fetch |
+| `reana-dcache-benchmark.yaml` | 7 m 50 s | DeepEval install, then a 42-file fetch |
 | `reana.yaml` | 8 m 35 s | DeepEval install, four steps |
 
 A DeepEval install costs most of eight minutes on this cluster. Start
