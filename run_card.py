@@ -313,7 +313,8 @@ def answer(client: MCPClient | None, row: dict) -> dict:
         out["not_run"] = "no MCP session (no token, or the handshake failed)"
         return out
     if not tool:
-        out["not_run"] = "the case names no tool in additional_metadata.tool"
+        out["not_run"] = ("the case names no tool in additional_metadata.tool, "
+                          "so this runner has nothing to call for it")
         return out
     if tool not in DOCUMENTED_TOOLS:
         out["not_run"] = f"{tool!r} is not one of the nine documented tools"
@@ -535,9 +536,17 @@ def main() -> int:
         rows = [json.loads(line) for line in entry["cases"].read_text().splitlines() if line.strip()]
         sut = system_under_test(entry["suite_root"], entry["use_case_id"])
 
+        # Only generate answers for datasets this card is responsible for.
+        # Calling the MCP path for a static_artifact dataset produces a row of
+        # "no MCP session" lines that are false whenever a session exists.
+        mine = str(sut.get("kind") or "") == "mcp_server"
+
         cases_out: list[dict[str, Any]] = []
         for row in rows:
-            produced = answer(client, row)
+            produced = (answer(client, row) if mine else
+                        {"actual_output": "",
+                         "not_run": f"not this card's dataset (kind="
+                                    f"{sut.get('kind') or 'unspecified'})"})
             actual = produced["actual_output"]
             case: dict[str, Any] = {
                 "name": row.get("name"),
@@ -581,11 +590,28 @@ def main() -> int:
             "fields": cases_out,
         }
         if not scored:
-            result["not_scored"] = (
-                f"{len(cases_out)} case(s) produced no actual_output. "
-                f"The system under test is {sut.get('kind')}, reached over MCP, "
-                "which needs RDM_MCP_BEARER_TOKEN and a reachable server."
-            )
+            kind = str(sut.get("kind") or "unspecified")
+            if kind != "mcp_server":
+                # Not this runner's dataset. Blaming a credential that is
+                # present sends the reader looking for a problem they do not
+                # have, which is worse than saying nothing.
+                result["not_scored"] = (
+                    f"{len(cases_out)} case(s) not scored here: the system under "
+                    f"test is {kind}, not mcp_server, so this card does not "
+                    "generate its answers. eval_benchmark.py scores it."
+                )
+            elif client is None:
+                result["not_scored"] = (
+                    f"{len(cases_out)} case(s) produced no actual_output. The MCP "
+                    "session was not established, which needs RDM_MCP_BEARER_TOKEN "
+                    "and a reachable server."
+                )
+            else:
+                result["not_scored"] = (
+                    f"{len(cases_out)} case(s) produced no actual_output even "
+                    "though the MCP session was established. See each case's "
+                    "own reason."
+                )
         report["datasets"].append(result)
 
         if args.write_results:
