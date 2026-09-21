@@ -7,12 +7,12 @@ version: 0.9.0
 
 inputs:
   files:
-    - eval_harness.py
+    - evaluate.py
     - counting_proxy.py
   directories:
-    - example
+    - examples
   parameters:
-    tree: example
+    tree: examples
     repeats: "3"
     # Forwarded verbatim. Open WebUI serves /api/chat/completions rather than
     # /v1/chat/completions, so nothing is appended to a URL that already names
@@ -33,7 +33,7 @@ workflow:
       - name: evaluate
         environment: 'python:3.12-slim'
         commands:
-          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES EVAL_LLM_BASE_URL=${eval_llm_base_url} EVAL_LLM_AUTH_HEADER=${eval_llm_auth_header} python eval_harness.py --tree ${tree} --repeats ${repeats} --out results
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES EVAL_LLM_BASE_URL=${eval_llm_base_url} EVAL_LLM_AUTH_HEADER=${eval_llm_auth_header} python evaluate.py --tree ${tree} --repeats ${repeats} --out results
 
 outputs:
   files:

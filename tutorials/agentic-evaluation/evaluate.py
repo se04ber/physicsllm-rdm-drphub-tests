@@ -102,7 +102,7 @@ def _invoke_python(spec: dict[str, Any], case: dict[str, Any]) -> str:
 def _resolve_in_dataset(arg: str, folder: pathlib.Path | None) -> str:
     """A relative script path in system.json means relative to the dataset.
 
-    Anything else surprises the person who wrote it: they put my_agent.py
+    Anything else surprises the person who wrote it: they put agent.py
     beside their cases and reasonably expect it to be found, whatever
     directory the harness happens to be run from.
     """

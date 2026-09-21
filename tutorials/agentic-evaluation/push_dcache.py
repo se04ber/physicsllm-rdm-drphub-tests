@@ -12,8 +12,8 @@ turns out to have no cases.jsonl, or a malformed one, costs a round trip
 through a REANA run to discover. Validation here is cheap and local.
 
     DCACHE_BEARER_TOKEN=<macaroon> python3 push_dcache.py \
-        --source ./my_benchmark \
-        --dest https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/my_group/my_benchmark
+        --source ./with_agent \
+        --dest https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/my_group/with_agent
 
 Always exits 0: a bundle that is not ready is a finding, not a crash.
 """
