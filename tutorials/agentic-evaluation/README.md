@@ -97,20 +97,34 @@ before it writes anything, because a malformed `cases.jsonl` that reaches the
 store costs a round trip through a REANA run to discover:
 
 ```bash
-DCACHE_BEARER_TOKEN=<macaroon> python3 push_dcache.py \
+DCACHE_BEARER_TOKEN="$(oidc-token HIFIS)" python3 push_dcache.py \
   --source ./my_benchmark \
-  --dest https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/my_group/my_benchmark \
+  --dest https://dcache-doma-door01.desy.de/punch/physicsllm/user/<your-account>/Benchmarks/my_benchmark \
   --dry-run
 ```
+
+**The upload uses your own Helmholtz token, not a macaroon.** Measured on
+2026-09-21: macaroons are read-only at this door. One requesting
+`activity:UPLOAD` is issued without complaint and then refused at write time
+with `Permission denied for PUT`, whether it was minted by password or
+through the OIDC identity. Your own token writes: `PUT` returns 201, and a
+42-file bundle uploaded with nothing refused.
+
+That split is worth keeping on purpose. You write as yourself, so the upload
+carries real attribution and no service acts on your behalf. The macaroon in
+step 3 reads, and it sits in a REANA secret store where it cannot write.
 
 ```
   cases.jsonl: 10 case(s), 10 with a golden label
   dry run: 42 file(s) would be uploaded
 ```
 
-Drop `--dry-run` to upload. The macaroon needs `activity:UPLOAD,LIST` for
-this, and `DOWNLOAD,LIST,READ_METADATA` for the fetch in step 3; mint one of
-each rather than one that can do both.
+Drop `--dry-run` to upload.
+
+Write into your own `user/<account>/` tree. `01Benchmarks` is the obvious
+place for shared bundles and an ordinary VO member cannot write there:
+listing works and every `PUT` is refused. Whether that becomes a
+group-writable drop area is a question for the VO administrators.
 
 A bundle with no `expected_output` anywhere is reported and still uploaded.
 Reference-free is a legitimate shape; it simply cannot be scored against

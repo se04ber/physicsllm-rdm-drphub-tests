@@ -118,6 +118,11 @@ def main() -> int:
     a = ap.parse_args()
 
     source = pathlib.Path(a.source).resolve()
+    # Any bearer dCache accepts. Despite the name, this is usually NOT a
+    # macaroon for an upload: macaroons are read-only at this door, issued
+    # with activity:UPLOAD and then refused at write time. Writes use the
+    # user's own OIDC token:
+    #     DCACHE_BEARER_TOKEN="$(oidc-token HIFIS)" python3 push_dcache.py ...
     token = os.environ.get("DCACHE_BEARER_TOKEN", "")
     dest = a.dest.rstrip("/")
 
@@ -132,8 +137,9 @@ def main() -> int:
         print("\nnot uploading: fix the above first", file=sys.stderr)
         return 0
     if not token:
-        print("\nno token: set DCACHE_BEARER_TOKEN to a macaroon with "
-              "activity:UPLOAD,LIST", file=sys.stderr)
+        print("\nno token: set DCACHE_BEARER_TOKEN. For an upload this is your "
+              "own OIDC token, not a macaroon:\n"
+              '  DCACHE_BEARER_TOKEN="$(oidc-token HIFIS)"', file=sys.stderr)
         return 0
 
     files = sorted(p for p in source.rglob("*") if p.is_file())
