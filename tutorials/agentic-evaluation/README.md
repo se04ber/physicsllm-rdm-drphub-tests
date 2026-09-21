@@ -87,7 +87,11 @@ reana-client run -f reana-local.yaml -w my-eval
 ## Route B: a folder on dCache
 
 The community path. A group uploads a bundle to the VO space, and a REANA job
-fetches and scores it. No copy lives in this repository, and no manual step
+fetches and scores it.
+
+If you uploaded with `s4p` or `push_dcache.py` following
+[the storage guide](https://gitlab.desy.de/), you are already at step 2: the
+bundle is there and what remains is the read credential. No copy lives in this repository, and no manual step
 sits between the upload and the verdict.
 
 ### 1. Upload your benchmark
@@ -195,6 +199,94 @@ the token it reports "no token" and exits 0, because a card that is not set up
 yet is a finding rather than a failure.
 
 ---
+
+## Reading the output
+
+Every line below is from a real run. Nothing here is illustrative.
+
+### The fetch
+
+```
+  fetched .../p08_reflectivity/golden_label/scicat_dataset_metadata.json (4096 bytes)
+  fetched .../p08_reflectivity/data/reflectivity.ort (12763 bytes)
+42 file(s) fetched
+```
+
+The tree arrives with its structure intact, so what you uploaded is what gets
+evaluated. `results/fetch_report.json` records the base URL, whether a token
+was supplied, whether TLS verified, and every file with its size. A fetch
+that got nothing says `nothing fetched` and the run continues, because an
+empty tree is a finding rather than a crash.
+
+### The evaluation
+
+```
+eval harness   run 56fd55b5   on reana   3 repeats
+  deepeval 4.2.3   opentelemetry 1.38.0   proxy 127.0.0.1:37239
+
+  DATASET                                  CASES  PASS  GATE   LATENCY
+  c5_agent_demo/reflectivity_qa                3     3  pass   355.9 ms
+  c5_metadata_suggestion/p08_reflectivity     10     8  fail   not measured
+
+  tokens   1,284 over 9 model calls (measured)
+  gate     1 pass · 1 fail
+
+  results/eval_report.json
+```
+
+**The header** says what was actually loaded, not what was requested. If
+DeepEval failed to install it reads `deepeval absent` and the run continues
+on the deterministic tiers. `on reana` comes from `REANA_WORKFLOW_UUID`, so
+the report knows where it ran without being told.
+
+**`CASES` against `PASS`.** 10 cases, 8 passed. The two that did not are one
+difference absorbed by normalisation and one real content difference. A
+dataset with no golden labels shows `-` under PASS rather than 0, because
+nothing was scored and zero would be a claim.
+
+**`GATE`** is one of three values: `pass`, `fail`, `not scored`. That third
+value is the important one. An unscored case and a wrong answer are
+different facts, and a report that collapses them cannot be acted on.
+
+**`LATENCY`** is `not measured` whenever nothing was invoked, which is the
+case for any dataset whose answers already sit in the file. It is measured,
+with a standard deviation across repeats, whenever `system.json` told the
+harness to run something.
+
+**`tokens`** counts what passed through the proxy. If the number is absent
+the line says why, and never says zero:
+
+```
+  tokens   not measured, 3 model calls made, none returned a usage block
+           upstream returned no usage block; body began: data: {"choices"...
+```
+
+That is a real failure mode. Some endpoints stream, and a streamed reply
+carries usage only in a late frame. The proxy reads those, and when it still
+cannot find one it prints what actually came back so the cause is visible
+rather than guessed at.
+
+### The verdict line
+
+```
+1 dataset(s); 0 passed the gate, 1 failed, 0 not scored
+```
+
+For the P08 bundle, `fail` is the correct answer and worth saying out loud
+before anyone sees red. Eight of ten fields match exactly, `creationTime`
+differs only in format and is absorbed by normalisation, and `datasetName`
+genuinely differs. A green gate there would mean the comparison was not
+looking.
+
+### What the JSON holds that the console does not
+
+Per-case expected and actual values, the full text of any error, the
+provenance of every number, and the OpenTelemetry spans. The console is for
+reading; `results/eval_report.json` is for consuming.
+
+Every measurement carries `measured`, `self_reported` or `not_available`.
+That field exists so a latency you measured and one somebody typed never end
+up in the same column.
 
 ## The structure, and why it is this small
 
