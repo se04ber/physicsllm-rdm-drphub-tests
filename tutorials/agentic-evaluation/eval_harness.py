@@ -99,10 +99,32 @@ def _invoke_python(spec: dict[str, Any], case: dict[str, Any]) -> str:
     return str(fn(case.get("input", ""), case.get("additional_metadata") or {}))
 
 
+def _resolve_in_dataset(arg: str, folder: pathlib.Path | None) -> str:
+    """A relative script path in system.json means relative to the dataset.
+
+    Anything else surprises the person who wrote it: they put my_agent.py
+    beside their cases and reasonably expect it to be found, whatever
+    directory the harness happens to be run from.
+    """
+    if folder is None or pathlib.Path(arg).is_absolute():
+        return arg
+    if pathlib.Path(arg).exists():
+        return arg
+    candidate = folder / pathlib.Path(arg).name
+    if candidate.exists():
+        return str(candidate)
+    candidate = folder / arg
+    return str(candidate) if candidate.exists() else arg
+
+
 def _invoke_subprocess(spec: dict[str, Any], case: dict[str, Any]) -> str:
     cmd = spec.get("command")
     if not cmd:
         raise RuntimeError("system.json kind=subprocess needs 'command'")
+    folder = spec.get("_dataset_dir")
+    folder = pathlib.Path(folder) if folder else None
+    if isinstance(cmd, list):
+        cmd = [cmd[0]] + [_resolve_in_dataset(str(x), folder) for x in cmd[1:]]
     proc = subprocess.run(
         cmd if isinstance(cmd, list) else ["sh", "-c", str(cmd)],
         input=json.dumps({"input": case.get("input", ""),
@@ -209,6 +231,10 @@ def main() -> int:
         rows_in = [json.loads(l) for l in
                    cases_path.read_text(encoding="utf-8").splitlines() if l.strip()]
         system = _find_system(cases_path, root)
+        # So a relative script path in system.json resolves against the folder
+        # the author put it in, not against wherever the harness was started.
+        if system:
+            system["_dataset_dir"] = str(cases_path.parent)
         kind = str(system.get("kind") or "")
         rel_name = str(cases_path.parent.relative_to(root))
         # relative_to returns "." when --tree points straight at the dataset;

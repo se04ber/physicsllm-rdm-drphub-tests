@@ -17,7 +17,11 @@ prompt = (f"{case['input']}\n\n"
           "Answer with the single value only, no sentence, no punctuation.")
 body = json.dumps({"model": os.environ.get("EVAL_LLM_MODEL", "alias-fast"),
                    "messages": [{"role": "user", "content": prompt}],
-                   "temperature": 0, "max_tokens": 32}).encode()
+                   "temperature": 0, "max_tokens": 32,
+                   # Unstreamed: this agent parses one JSON document. The
+                   # counting proxy handles either shape, so an agent that
+                   # does stream still gets counted.
+                   "stream": False}).encode()
 req = urllib.request.Request(f"{base}/chat/completions", data=body,
                              headers={"Content-Type": "application/json",
                                       "Authorization": "Bearer " + os.environ.get("OPENAI_API_KEY", "")})

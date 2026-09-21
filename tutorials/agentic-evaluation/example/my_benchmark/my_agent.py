@@ -33,6 +33,11 @@ request = urllib.request.Request(
         }],
         "temperature": 0,
         "max_tokens": 32,
+        # Explicitly unstreamed: this agent parses one JSON document, and a
+        # streamed reply is a sequence of data: frames instead. The counting
+        # proxy handles either, so an agent that does stream still gets its
+        # tokens counted; this one simply has no reason to.
+        "stream": False,
     }).encode(),
     headers={
         "Content-Type": "application/json",

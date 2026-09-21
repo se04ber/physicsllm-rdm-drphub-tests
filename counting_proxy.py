@@ -69,6 +69,39 @@ def _upstream_url(path: str) -> str:
     return f"{base}{path}"
 
 
+def _usage_from(body: bytes) -> dict[str, Any] | None:
+    """The usage block, from a plain JSON reply or from a streamed one.
+
+    A streamed response is a sequence of `data: {...}` frames rather than one
+    JSON document, so json.loads on the whole body fails at character zero.
+    With stream_options.include_usage set, which this proxy always sets, one
+    frame near the end carries the totals. Reading it is the difference
+    between measuring a streaming provider and reporting it as unmeasured.
+    """
+    text = body.decode("utf-8", "replace")
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict) and parsed.get("usage"):
+            return parsed["usage"]
+    except ValueError:
+        pass
+    found = None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if payload == "[DONE]":
+            continue
+        try:
+            frame = json.loads(payload)
+        except ValueError:
+            continue
+        if isinstance(frame, dict) and frame.get("usage"):
+            found = frame["usage"]  # the last one wins: totals come at the end
+    return found
+
+
 def _want_usage(body: dict[str, Any]) -> dict[str, Any]:
     """Streaming omits usage unless asked. Ask, every time.
 
@@ -115,14 +148,12 @@ class _Handler(BaseHTTPRequestHandler):
 
         elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
         preview = None
-        try:
-            usage = (json.loads(out.decode("utf-8")) or {}).get("usage")
-        except Exception:  # noqa: BLE001 - streamed or non-JSON; usage stays None
-            usage = None
+        usage = _usage_from(out)
+        if usage is None:
             # Record what actually came back. "200 with no usage" is
-            # indistinguishable from a dozen causes without it: a streamed
-            # data: frame, an HTML error page, a provider that simply omits
-            # the block. One line of the body separates them.
+            # indistinguishable from several causes without it: a provider
+            # that omits the block, an error page returned with 200, an
+            # unexpected content type. One line of the body separates them.
             preview = " ".join(out[:300].decode("utf-8", "replace").split())[:200]
 
         with _LOCK:
