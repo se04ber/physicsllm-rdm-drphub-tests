@@ -51,6 +51,10 @@ workflow:
           # community bundle in any other shape is fetched and then silently
           # ignored. Observed on 2026-09-21: 51 files came down from
           # 01Benchmarks and only one of the two bundles was scored.
+          # Deliberately no --allow-exec. This tree came off shared storage,
+          # so any VO member could have written the system.json in it, and
+          # this job holds DCACHE_BEARER_TOKEN and EVAL_LLM_API_KEY. A
+          # fetched bundle gets scored, never run.
           - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES python evaluate.py --tree ${tree} --out results
 
 outputs:

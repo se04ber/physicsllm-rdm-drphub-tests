@@ -217,6 +217,38 @@ print(json.dumps({"output": my_agent(case["input"])}))
 Relative paths resolve against the dataset folder, so `agent.py` beside your
 cases is found wherever the harness runs from.
 
+## Running a bundle you did not write
+
+Invoking a system means doing what its `system.json` says: executing a
+command, importing a module, or posting to a URL. That is correct for a
+bundle you wrote and dangerous for one you fetched, because the job holds
+storage and model credentials.
+
+So it is off by default:
+
+```bash
+python3 evaluate.py --tree examples/with_agent --allow-exec
+```
+
+Without the flag the dataset is scored on whatever answers are in the file,
+and the report says what it declined to run:
+
+```
+  with_agent    3   -   not scored
+       system.json declares kind='subprocess', which would execute a command
+       from the bundle. This runs only with --allow-exec...
+```
+
+`reana-local.yaml` passes `--allow-exec`, because its bundle ships in the
+card. `reana-dcache.yaml` does not, because its tree came off shared storage
+where any VO member could have written the `system.json`.
+
+One related restriction: `http_endpoint` no longer takes a `token_env`
+naming an environment variable. A fetched bundle could name
+`DCACHE_BEARER_TOKEN` and have it posted to a URL of its choosing, which is
+credential exfiltration with no code execution required. The name is fixed at
+`SYSTEM_UNDER_TEST_TOKEN`, which is not a credential this project sets.
+
 ## Golden labels
 
 A case is scored when it has both `expected_output` and an answer.

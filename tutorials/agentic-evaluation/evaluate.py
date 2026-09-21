@@ -80,7 +80,11 @@ def _invoke_http(spec: dict[str, Any], case: dict[str, Any]) -> str:
     payload = json.dumps({"input": case.get("input", ""),
                           "metadata": case.get("additional_metadata") or {}}).encode()
     headers = {"Content-Type": "application/json"}
-    token = os.environ.get(str(spec.get("token_env") or ""), "")
+    # token_env used to be whatever the bundle asked for, so a fetched
+    # system.json could name DCACHE_BEARER_TOKEN and have it posted to a URL
+    # of its choosing. Credential exfiltration with no code execution needed.
+    # One fixed name now, and it is not one of ours.
+    token = os.environ.get("SYSTEM_UNDER_TEST_TOKEN", "")
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
@@ -142,6 +146,21 @@ INVOKERS = {"http_endpoint": _invoke_http,
             "python_entrypoint": _invoke_python,
             "subprocess": _invoke_subprocess}
 
+# Running a system means doing what its system.json says: executing a command,
+# importing a module, or posting to a URL. That is correct for a bundle you
+# wrote and dangerous for one you fetched, because the job holds storage and
+# model credentials. So it is off unless asked for.
+EXEC_WARNING = (
+    "system.json declares kind={kind!r}, which would {action}. This runs only "
+    "with --allow-exec, because a fetched bundle can name any command, module "
+    "or URL, and this job holds credentials. Scored without it."
+)
+EXEC_ACTIONS = {
+    "subprocess": "execute a command from the bundle",
+    "python_entrypoint": "import and call code named by the bundle",
+    "http_endpoint": "post case content to a URL named by the bundle",
+}
+
 
 # --------------------------------------------------------------------------
 # scoring: deterministic first, because a gate that depends on a judge is a
@@ -179,6 +198,10 @@ def main() -> int:
     ap.add_argument("--out", default="results")
     ap.add_argument("--repeats", type=int, default=1,
                     help="one run cannot distinguish reliable from lucky")
+    ap.add_argument("--allow-exec", action="store_true",
+                    help="run the system each system.json declares. Off by "
+                         "default: a fetched bundle can name any command, "
+                         "module or URL, and this process holds credentials.")
     a = ap.parse_args()
 
     root = pathlib.Path(a.tree).resolve()
@@ -241,17 +264,23 @@ def main() -> int:
         # the folder name is what the reader expects to see there.
         name = cases_path.parent.name if rel_name in (".", "") else rel_name
 
-        invoker = INVOKERS.get(kind)
-        # A kind we do not implement is not a missing credential and not a
-        # broken dataset. Saying so is the difference between a report someone
-        # can act on and one that sends them looking for a token they have.
-        # static_artifact is not unhandled: it means the answers already sit in
-        # the file, which is exactly what scoring them as they arrive does.
-        unhandled = (f"system.json declares kind={kind!r}, which this harness "
-                     f"does not invoke; handled kinds are "
-                     f"{', '.join(sorted(INVOKERS))}, or static_artifact for "
-                     f"answers already in the file"
-                     ) if kind and not invoker and kind != "static_artifact" else None
+        invoker = INVOKERS.get(kind) if a.allow_exec else None
+        refused = (EXEC_WARNING.format(kind=kind, action=EXEC_ACTIONS[kind])
+                   if kind in INVOKERS and not a.allow_exec else None)
+        if refused:
+            unhandled = refused
+        elif kind and not invoker and kind != "static_artifact":
+            # A kind we do not implement is not a missing credential and not a
+            # broken dataset. Saying so is the difference between a report
+            # someone can act on and one that sends them hunting a token they
+            # already have. static_artifact is handled: the answers are in the
+            # file, which is what scoring them as they arrive means.
+            unhandled = (f"system.json declares kind={kind!r}, which this "
+                         f"harness does not invoke; handled kinds are "
+                         f"{', '.join(sorted(INVOKERS))}, or static_artifact "
+                         f"for answers already in the file")
+        else:
+            unhandled = None
         scored, latencies, errors = [], [], []
         for rep in range(a.repeats):
             for row in rows_in:
