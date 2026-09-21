@@ -69,9 +69,17 @@ to POST to `/mcp`.
 
 ## Images
 
-Stock public images only. Every `ghcr.io/se04ber` image is HTTP 403 anonymously,
-so REANA on C4P cannot pull one. Until an image is published somewhere public,
-`python:3.12-slim` and `wlcg-wn:latest` are the options.
+`ghcr.io/se04ber/nanobot-harness` and `ghcr.io/se04ber/rdm-mcp` were made
+public on 2026-09-21 and are now anonymously pullable, verified by an
+unauthenticated tag listing returning HTTP 200 for both. Before publishing,
+each was checked for baked-in credentials: clean build history apart from the
+official Python image's public GPG key, no `.env`, no private key material.
+
+That fixes the pull, and it does not fix compute4punch, which is a separate
+constraint: only `wlcg-wn:latest` has been observed to submit there, including
+against a fully-qualified `docker.io/library/python:3.12-slim`. So a C4P card
+still uses `wlcg-wn:latest` and the stdlib. On the default backend any of the
+three now works.
 
 ## Per-card detail
 
