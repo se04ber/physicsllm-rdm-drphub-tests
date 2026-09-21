@@ -78,6 +78,30 @@ so REANA on C4P cannot pull one. Until an image is published somewhere public,
 * [`docs/mcp-observed.md`](docs/mcp-observed.md): what the MCP card measures,
   what has been verified against the live server, and what has not.
 
+## Before submitting: check_specs.py
+
+```bash
+python3 check_specs.py
+```
+
+`reana-client validate` checks the schema. These are the faults that are
+schema-valid and still do not run, each of which cost a failed submission:
+
+* **A compute4punch step on any image but `wlcg-wn:latest`.** Established by
+  isolation on 2026-09-21: `wlcg-wn:latest` submits with or without resource
+  fields, while both `python:3.12-slim` and `docker.io/library/python:3.12-slim`
+  fail. So it is the image, not the resources, and not a missing registry
+  prefix. REANA reports it as `'NoneType' object has no attribute 'splitlines'`,
+  naming neither. There is no reason to want a python image there:
+  C4Compute's own `python_hello/reana-c4p.yaml` runs `python3` inside
+  `wlcg-wn:latest`.
+* **`c4p_cpu_cores` or `c4p_memory_limit` as a number.** The schema wants a
+  string, so quote them.
+* **A directory in `inputs.files`.** It belongs in `inputs.directories`;
+  REANA refuses it at upload time, after the workflow has been created.
+* **`pip install` on compute4punch**, which cannot write where pip needs to.
+* **An install step on a different backend from the step that imports it.**
+
 ## Which backend reaches the MCP server
 
 `physicsllm-rdm.desy.de` is not publicly reachable, and this is measured rather
