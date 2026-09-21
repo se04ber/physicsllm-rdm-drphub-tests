@@ -92,13 +92,37 @@ sits between the upload and the verdict.
 
 ### 1. Upload your benchmark
 
-Mirror the layout you want evaluated. The harness searches recursively, so the
-only thing that matters is that `cases.jsonl` is somewhere underneath.
+`push_dcache.py` needs nothing installed beyond Python. It checks the bundle
+before it writes anything, because a malformed `cases.jsonl` that reaches the
+store costs a round trip through a REANA run to discover:
 
 ```bash
-s4p upload --profile custom \
+DCACHE_BEARER_TOKEN=<macaroon> python3 push_dcache.py \
   --source ./my_benchmark \
-  --dest-rel 01Benchmarks/my_group/my_benchmark
+  --dest https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/my_group/my_benchmark \
+  --dry-run
+```
+
+```
+  cases.jsonl: 10 case(s), 10 with a golden label
+  dry run: 42 file(s) would be uploaded
+```
+
+Drop `--dry-run` to upload. The macaroon needs `activity:UPLOAD,LIST` for
+this, and `DOWNLOAD,LIST,READ_METADATA` for the fetch in step 3; mint one of
+each rather than one that can do both.
+
+A bundle with no `expected_output` anywhere is reported and still uploaded.
+Reference-free is a legitimate shape; it simply cannot be scored against
+goldens, and you should know that before the run rather than after.
+
+**The rclone helper still works** and is the right tool for large transfers,
+since it handles parallelism and retries. It needs rclone, `oidc-agent`, a
+per-user config and intranet access. For a benchmark bundle, a macaroon and
+this script need none of those.
+
+```bash
+s4p upload --profile custom --source ./my_benchmark --dest-rel 01Benchmarks/my_group/my_benchmark
 ```
 
 ### 2. Mint a read-only macaroon
