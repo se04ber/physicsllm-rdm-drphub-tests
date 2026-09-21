@@ -1,71 +1,77 @@
-# DeepEval on A_Data — real output vs. a published record
+# physics-llm RDM: DRP-Hub workflow cards
 
-Neither side of this comparison is a fixture. The prediction is
-`mapped_header_draft.json` exactly as our extraction produced it; the answer
-key is the published SciCat record for the same dataset,
-`public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4`.
+Four cards, one repository, all on `main`. The DRP-Hub launcher clones the
+default branch and nothing else, so a card on any other branch has never been
+launchable from the Hub whatever its description said. Keeping them here is the
+workaround for that; one repository per card would suit the launcher better.
 
-## What it found
+Every card lives at the repository root with its own spec file. The scripts have
+distinct names, so nothing had to move into a subdirectory and no path inside any
+spec changed when they were brought together.
 
-| field | result |
-| --- | --- |
-| 8 of 10 fields | identical |
-| `creationTime` | differs in format only (`…10.000Z` vs `…10Z`) — **absorbed by normalisation** |
-| `datasetName` | the draft dropped the qualifier **“GIXOS-derived”** — real content loss |
+| Card | Spec | Backend | Needs a secret? | Status |
+|---|---|---|---|---|
+| DeepEval over real A_Data | `reana.yaml` | default | no | completed on REANA |
+| MCP tool surface, measured | `reana-mcp-observed.yaml` | default | `RDM_MCP_BEARER_TOKEN` | untested with a token |
+| PaNOSC search from C4P | `reana-panosc-c4p.yaml` | compute4punch | `RDM_MCP_BEARER_TOKEN`, `HELMHOLTZ_TOP` | never completed |
+| S4P transfer | `reana-s4p-transfer.yaml` | default | `S4P_BEARER_TOKEN` | preflight runs, upload needs a token |
 
-That contrast is the reason the metrics are tiered. A timestamp that differs
-only in precision must not fail a run. A name that quietly loses a qualifier
-must. No normaliser can be trusted to tell those apart on its own, which is
-where a judged metric earns its place — reported, never deciding.
+`reana.yaml` is the DeepEval card because it is the only one known to complete
+end to end, so the launcher's default lands on something that works. The other
+three are launched by naming their spec file.
 
-## The judged tier, actually run
-
-Two different models, asked independently, on 2026-09-20:
-
-| judge | `datasetName` verdict | score | reason given |
-| --- | --- | --- | --- |
-| `coding` | degraded | 0.7 | drops “GIXOS-derived”, which specifies the measurement origin |
-| `desy-assistant` | degraded | 0.8 | the prefix is omitted, altering the specificity of the method |
-
-Both agreed `creationTime` is **equivalent** — the same call the normaliser
-makes — and both marked the other eight fields equivalent at 1.0. So the
-judged tier reproduces across models and agrees with the deterministic gate,
-while adding the one thing the gate cannot give: *why*, and *how badly*.
-
-Cost: ~3.3k tokens for ten fields.
-
-### A gateway caveat worth knowing
-
-Requesting `vllm/reasoning` is silently served by `coding`. Verified by
-asking for four model names in turn: `vllm/coding` → `coding`,
-`vllm/desy-assistant` → `desy-assistant`, but `vllm/reasoning` → `coding`
-and bare `reasoning` → `coding`. No error is raised.
-
-This card therefore records `model_requested` **and** `model_served` on every
-judged field, and prints a NOTE when they disagree — otherwise a result would
-silently be attributed to the wrong model.
-
-## Tiers
-
-| tier | gating | what it is |
-| --- | --- | --- |
-| `exact` | yes | byte equality |
-| `normalised` | yes | equality after timestamp and whitespace normalisation |
-| `judged` | **never** | DeepEval `GEval`; skipped with a stated reason when no judge is configured |
-
-`DEEPEVAL_JUDGE_MODEL` is intentionally unset. A judge is a deployment choice,
-not a property of the bundle.
-
-## Running it
-
-No secrets, no harness image, no MCP server, no S4P — the two JSON files it
-needs travel with the card, and it runs on stock `python:3.12-slim`.
+## Running one
 
 ```bash
-pip install deepeval
-python run_deepeval.py --data data --out results
+reana-client run -f reana-mcp-observed.yaml -w mcp-observed
 ```
 
-DeepEval is installed at run time. If the job has no outbound network the
-install fails, the report says so, and the same comparison is still computed —
-so the card produces a verdict either way. Telemetry is opted out.
+From the Hub, the launcher needs to be told which specification to use. If it
+cannot yet be told, only `reana.yaml` is reachable, which is the reason for the
+choice above.
+
+## Secrets
+
+Nothing secret is committed, and nothing secret can be: the launcher requires the
+repository to be anonymously cloneable, so a committed token would be a published
+token. Secrets come from the REANA store:
+
+```bash
+reana-client secrets-add --env RDM_MCP_BEARER_TOKEN=<value>
+reana-client secrets-add --env S4P_BEARER_TOKEN=<value>
+```
+
+Every card reports a missing secret as a finding and exits 0. A card that is not
+set up yet is not a broken card, and a run that fails for want of a token tells
+nobody anything they did not already know.
+
+## TLS
+
+All three cards that reach `physicsllm-rdm.desy.de:8443` use `tls_mode: verify`.
+Since 2026-09-21 that host serves a certificate issued by GEANT TLS ECC 1,
+chaining to the HARICA TLS ECC Root CA 2021 and valid until 2027-04-08. That root
+is in the public trust store, so both `python:3.12-slim` and `wlcg-wn:latest`
+verify it with no CA bundle added.
+
+`insecure` remains a parameter for the case where the certificate lapses before
+anyone renews it. A result obtained that way carries a caveat that a result under
+`verify` does not.
+
+## A trap worth knowing about `/health`
+
+`curl -sk https://physicsllm-rdm.desy.de:8443/health` returns 200, and that 200
+says nothing about the MCP server. The deployment's Caddy config routes `/mcp*`
+to the MCP service and everything else to the chat surface, so `/health` on that
+port is answered by the web UI. The way to tell whether the MCP service is up is
+to POST to `/mcp`.
+
+## Images
+
+Stock public images only. Every `ghcr.io/se04ber` image is HTTP 403 anonymously,
+so REANA on C4P cannot pull one. Until an image is published somewhere public,
+`python:3.12-slim` and `wlcg-wn:latest` are the options.
+
+## Per-card detail
+
+* [`docs/mcp-observed.md`](docs/mcp-observed.md): what the MCP card measures,
+  what has been verified against the live server, and what has not.

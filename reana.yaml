@@ -13,12 +13,25 @@ version: 0.9.0
 inputs:
   files:
     - run_deepeval.py
+    - eval_live.py
+    - data/routing_cases.jsonl
+    - data/panet_cases.jsonl
+    - eval_benchmark.py
+    - benchmark/TestBenchmark_PaN/config_user_group.json
+    - benchmark/TestBenchmark_PaN/datasets/c5_metadata_suggestion/p08_reflectivity/cases.jsonl
     - data/golden_label.json
     - data/mapped_header_draft.json
     - data/SOURCE.json
     - manifest.json
     - LICENSE
     - CITATION.cff
+
+  parameters:
+    mcp_base: https://physicsllm-rdm.desy.de:8443
+    # Since 2026-09-21 the host serves a GEANT certificate that chains to the
+    # HARICA 2021 root, which is in the public trust store, so the job needs
+    # no CA bundle of its own.
+    tls_mode: verify
 
 workflow:
   type: serial
@@ -28,13 +41,30 @@ workflow:
         environment: 'python:3.12-slim'
         commands:
           # Never fail the run on the install: the script reports its absence.
-          - pip install --no-cache-dir --quiet deepeval || echo "deepeval install failed - continuing without it"
+          - HOME=/tmp pip install --no-cache-dir --quiet --target .deps deepeval || echo "deepeval install failed - continuing without it"
 
       - name: score
         environment: 'python:3.12-slim'
         commands:
-          - DEEPEVAL_TELEMETRY_OPT_OUT=YES python run_deepeval.py --data data --out results
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES python run_deepeval.py --data data --out results
+
+      # The benchmark tree, scored where it lies. Needs no dCache and no
+      # MCP server - the layout is the same whether the tree is a local
+      # mirror or the real one.
+      - name: benchmark
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp PYTHONPATH=.deps python eval_benchmark.py --tree benchmark --write-results
+
+      # Ask the running system to decide something now, rather than only
+      # scoring a draft produced earlier. Skips cleanly without a token.
+      - name: live
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp PYTHONPATH=.deps python eval_live.py --base ${mcp_base} --tls ${tls_mode} --data data --out results
 
 outputs:
   files:
     - results/deepeval_report.json
+    - results/live_routing.json
+    - results/benchmark_report.json

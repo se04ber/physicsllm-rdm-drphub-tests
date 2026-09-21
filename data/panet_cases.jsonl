@@ -1,0 +1,11 @@
+{"query": "x-ray reflectivity", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01149", "kind": "label"}
+{"query": "xrr", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01149", "kind": "alias"}
+{"query": "reflectivity", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01149", "kind": "alias"}
+{"query": "reflectometry", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01149", "kind": "alias"}
+{"query": "gixos", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01149", "kind": "alias"}
+{"query": "imaging", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01106", "kind": "label"}
+{"query": "microtomography", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01106", "kind": "alias"}
+{"query": "tomography", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01106", "kind": "alias"}
+{"query": "x-ray imaging", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01106", "kind": "alias"}
+{"query": "radiography", "expected_uri": "http://purl.org/pan-science/PaNET/PaNET01106", "kind": "alias"}
+{"query": "neutron spin echo", "expected_uri": null, "kind": "out_of_vocabulary"}
