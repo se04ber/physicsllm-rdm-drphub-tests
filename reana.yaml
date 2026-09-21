@@ -41,7 +41,12 @@ workflow:
         environment: 'python:3.12-slim'
         commands:
           # Never fail the run on the install: the script reports its absence.
-          - HOME=/tmp pip install --no-cache-dir --quiet --target .deps deepeval || echo "deepeval install failed - continuing without it"
+          # Bounded at 10 minutes, and not quiet. A DeepEval install on this
+          # cluster has been observed taking most of 9 minutes, so the bound is
+          # there to stop an indefinite hang rather than to cut a slow success
+          # short. The card computes its deterministic tiers without DeepEval,
+          # so hitting the bound costs the judged tier and nothing else.
+          - HOME=/tmp timeout 600 pip install --no-cache-dir --progress-bar off --target .deps deepeval || echo "deepeval unavailable (timeout or failure) - continuing with deterministic tiers"
 
       - name: score
         environment: 'python:3.12-slim'

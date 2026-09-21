@@ -16,6 +16,7 @@ spec changed when they were brought together.
 | PaNOSC search from C4P | `reana-panosc-c4p.yaml` | compute4punch | `RDM_MCP_BEARER_TOKEN`, `HELMHOLTZ_TOP` | never completed |
 | S4P transfer | `reana-s4p-transfer.yaml` | default | `S4P_BEARER_TOKEN` | preflight runs, upload needs a token |
 | Agentic evaluation harness | `reana-eval-harness.yaml` | default | `EVAL_LLM_API_KEY` | runs; portable, meant for others to run too |
+| MCP tool surface from DESY | `reana-mcp-c4p.yaml` | compute4punch | `RDM_MCP_BEARER_TOKEN`, `HELMHOLTZ_TOP` | the only one that can reach the MCP server |
 
 `reana.yaml` is the DeepEval card because it is the only one known to complete
 end to end, so the launcher's default lands on something that works. The other
@@ -76,6 +77,25 @@ so REANA on C4P cannot pull one. Until an image is published somewhere public,
 
 * [`docs/mcp-observed.md`](docs/mcp-observed.md): what the MCP card measures,
   what has been verified against the live server, and what has not.
+
+## Which backend reaches the MCP server
+
+`physicsllm-rdm.desy.de` is not publicly reachable, and this is measured rather
+than assumed. On 2026-09-21 `reana-mcp-observed.yaml` ran to completion on the
+default Kubernetes backend, installed both libraries, wrote all three outputs
+and exited green, having measured nothing: the handshake failed with
+`[Errno 101] Network is unreachable` after a 90-second timeout.
+
+**A green run does not mean the server was reached.** The card treats "not set
+up yet" as a finding rather than a failure, so the status column says finished
+either way. Read the report.
+
+`reana-mcp-c4p.yaml` is the variant that can reach it: `compute4punch` with the
+job pinned to a DESY drone. It carries no install step, because C4P cannot pip
+install and does not need to; neither `run_card.py` nor `mcp_client.py` imports
+DeepEval or OpenTelemetry at module level, so on stdlib alone the card still
+handshakes, checks the nine-tool surface, answers every case and times every
+call. Only DeepEval's judged tier is lost, and that never gates.
 
 ## The evaluation harness
 

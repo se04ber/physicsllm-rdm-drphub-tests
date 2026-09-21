@@ -149,6 +149,31 @@
       "outputs": [
         "results/eval_report.json"
       ]
+    },
+    {
+      "id": "rdm-mcp-tool-surface-from-desy",
+      "title": "The RDM MCP tool surface, measured from inside the DESY network",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "RDM_MCP_BEARER_TOKEN",
+          "HELMHOLTZ_TOP"
+        ]
+      },
+      "entry_point": "reana-mcp-c4p.yaml",
+      "status": "submitted to C4P 2026-09-21; scheduling on a DESY drone unproven",
+      "environments": [
+        "wlcg-wn:latest"
+      ],
+      "compute_backend": "compute4punch",
+      "files": [
+        "run_card.py",
+        "mcp_client.py"
+      ],
+      "outputs": [
+        "results/mcp_card_report.json",
+        "results/otel_summary.json"
+      ]
     }
   ],
   "dataset": {

@@ -1,0 +1,51 @@
+version: 0.9.0
+
+# The MCP tool surface, measured from inside the DESY network.
+#
+# Why this exists separately from reana-mcp-observed.yaml: on 2026-09-21 that
+# card ran green on the default Kubernetes backend and measured nothing. The
+# install succeeded, the card wrote all its outputs, and the MCP handshake
+# failed with "[Errno 101] Network is unreachable" after a 90-second timeout.
+# physicsllm-rdm.desy.de is not publicly reachable, so a job has to run inside
+# the network the server lives in. The DESY pin is what puts it there.
+#
+# No install step. C4P cannot pip install (the first real C4P run showed pip
+# cannot write where it needs to), and it does not need to: run_card.py and
+# mcp_client.py import neither DeepEval nor OpenTelemetry at module level, so
+# on stdlib alone the card still performs the handshake, checks the nine-tool
+# surface, answers all cases and times every call. What is lost is DeepEval's
+# judged tier, which never gates.
+
+inputs:
+  files:
+    - run_card.py
+    - mcp_client.py
+  directories:
+    - benchmark
+  parameters:
+    mcp_base: https://physicsllm-rdm.desy.de:8443
+    suite_path: benchmark/TestBenchmark_PaN
+    tls_mode: verify
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: measure
+        environment: "wlcg-wn:latest"
+        compute_backend: compute4punch
+        c4p_cpu_cores: "1"
+        c4p_memory_limit: "512"
+        # Keep the pin deliberately: reaching a DESY service from a DESY drone
+        # is the experiment, not an accident of scheduling. It does shrink the
+        # eligible pool, so give a run a time budget rather than assuming it
+        # schedules promptly.
+        c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
+        commands:
+          - mkdir -p results
+          - python3 run_card.py --tree ${suite_path} --base ${mcp_base} --tls ${tls_mode} --out results --write-results
+
+outputs:
+  files:
+    - results/mcp_card_report.json
+    - results/otel_summary.json
