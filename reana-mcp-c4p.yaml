@@ -36,10 +36,14 @@ workflow:
         compute_backend: compute4punch
         c4p_cpu_cores: "1"
         c4p_memory_limit: "512"
-        # Keep the pin deliberately: reaching a DESY service from a DESY drone
-        # is the experiment, not an accident of scheduling. It does shrink the
-        # eligible pool, so give a run a time budget rather than assuming it
-        # schedules promptly.
+        # Pin to DESY, and expect to wait. The server is not publicly
+        # reachable, so a job that lands elsewhere cannot reach it at all:
+        # an unpinned run is a lottery, not a demo. The cost is queue time,
+        # because the pin restricts to a smaller pool and waits for a DESY
+        # drone to fall idle. Observed 2026-09-21: a pinned job queued 14
+        # minutes without starting while an unpinned one completed in three.
+        # That is capacity, not a broken match. Give a run a real time
+        # budget rather than assuming it schedules promptly.
         c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
         commands:
           - mkdir -p results
