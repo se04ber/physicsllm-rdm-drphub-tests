@@ -139,16 +139,34 @@ this script need none of those.
 s4p upload --profile custom --source ./my_benchmark --dest-rel 01Benchmarks/my_group/my_benchmark
 ```
 
-### 2. Mint a read-only macaroon
+### 2. Mint a read-only macaroon, at the door root
 
 ```bash
 curl -s -X POST \
+  -H "Authorization: Bearer $(oidc-token HIFIS)" \
   -H 'Content-Type: application/macaroon-request' \
-  -d '{"caveats":["path:/punch/physicsllm/01Benchmarks","activity:DOWNLOAD,LIST,READ_METADATA"],"validity":"PT168H"}' \
-  -u <your-desy-account> \
-  https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks/ \
+  -d '{"caveats":["path:/punch/physicsllm/user/<your-account>/Benchmarks","activity:DOWNLOAD,LIST,READ_METADATA"],"validity":"PT168H"}' \
+  https://dcache-doma-door01.desy.de/ \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['macaroon'])"
 ```
+
+**Post to the door root, with nothing after the slash.** The URL you send the
+request to becomes a path caveat of its own, on top of the one you asked for,
+and the pair permits that exact directory and nothing beneath it:
+
+| Request posted to | PROPFIND on a subdirectory |
+| --- | --- |
+| `https://door/punch/physicsllm/user/me/Benchmarks/` | 403 |
+| `https://door/` | **207** |
+
+Measured 2026-09-21. The symptom is a 403 that looks like a permission
+problem on the data, and it is not. Read the caveats back to check:
+
+```bash
+python3 -c "import base64,sys;t=sys.argv[1];print(base64.urlsafe_b64decode(t+'='*(-len(t)%4)).decode('utf-8','replace'))" "$M" | grep path
+```
+
+Two identical `path` caveats means it was minted at the wrong URL.
 
 Three choices in that request are deliberate. The path caveat narrows the
 credential to `01Benchmarks`, so it cannot read anyone's user tree. The

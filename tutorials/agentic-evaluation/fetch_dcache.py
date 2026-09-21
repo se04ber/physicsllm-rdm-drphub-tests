@@ -11,6 +11,20 @@ Credential is a dCache macaroon in DCACHE_BEARER_TOKEN, from the REANA secret
 store. A macaroon is the right shape here: it carries a path caveat and an
 expiry, so the credential itself is bounded to the tree it is meant to read.
 
+MINT IT AT THE DOOR ROOT. The URL you POST the request to becomes a path
+caveat of its own, in addition to any you ask for, and the pair permits that
+exact path and nothing below it:
+
+    POST https://door/punch/physicsllm/user/me/Benchmarks/   ->  403 on any subdirectory
+    POST https://door/                                       ->  207 on the whole subtree
+
+Measured 2026-09-21. The symptom is a 403 that looks like a permission
+problem on the data, which is where an evening goes. Read caveats back with:
+
+    python3 -c "import base64,sys; t=sys.argv[1]; print(base64.urlsafe_b64decode(t+'='*(-len(t)%4)).decode('utf-8','replace'))" "$MACAROON"
+
+Two identical path caveats means it was minted at the wrong URL.
+
 Stdlib only, and always exits 0. Nothing fetched is a finding, not a crash.
 """
 from __future__ import annotations
