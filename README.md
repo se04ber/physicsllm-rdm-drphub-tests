@@ -17,6 +17,7 @@ spec changed when they were brought together.
 | S4P transfer | `reana-s4p-transfer.yaml` | default | `S4P_BEARER_TOKEN` | preflight runs, upload needs a token |
 | Agentic evaluation harness | `reana-eval-harness.yaml` | default | `EVAL_LLM_API_KEY` | runs; portable, meant for others to run too |
 | MCP tool surface from DESY | `reana-mcp-c4p.yaml` | compute4punch | `RDM_MCP_BEARER_TOKEN`, `HELMHOLTZ_TOP` | the only one that can reach the MCP server |
+| MCP server and evaluation together | `reana-mcp-selfcontained.yaml` | default | `RDM_MCP_BEARER_TOKEN` | **completed on REANA, gate passed** |
 
 `reana.yaml` is the DeepEval card because it is the only one known to complete
 end to end, so the launcher's default lands on something that works. The other
@@ -109,6 +110,35 @@ schema-valid and still do not run, each of which cost a failed submission:
   REANA refuses it at upload time, after the workflow has been created.
 * **`pip install` on compute4punch**, which cannot write where pip needs to.
 * **An install step on a different backend from the step that imports it.**
+
+## The card that runs the whole stack on REANA
+
+`reana-mcp-selfcontained.yaml` brings the server with it. `ghcr.io/se04ber/rdm-mcp`
+became publicly pullable on 2026-09-21 and contains the MCP server, so the job
+starts it on loopback and measures against it. No dependency on reaching DESY.
+
+Completed on REANA the same day:
+
+```
+endpoint      http://127.0.0.1:8000/mcp
+session       established
+tool surface  the live surface matches the nine documented read-only tools
+datasets      23/23 scored, gate=pass
+otel          27 calls, 205.9 ms total
+```
+
+Per-call latency is around 2ms on loopback against roughly 95ms to the
+deployed server over the network, which is a useful contrast rather than a
+better number: one measures the server, the other measures the path to it.
+
+It demonstrates the server, the tool surface, every case and the timing, all
+under REANA. It does not demonstrate that the deployed instance is reachable;
+that is `reana-mcp-c4p.yaml`'s job.
+
+**One trap worth knowing.** REANA substitutes `${...}` in step commands, so an
+inline shell loop using `$(...)` or `$i` is read as a workflow placeholder and
+the run dies with `Invalid placeholder in string` before anything executes.
+The shell lives in `serve_and_measure.sh` for that reason.
 
 ## Which backend reaches the MCP server
 
