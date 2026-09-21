@@ -19,13 +19,45 @@ import argparse
 import json
 import os
 import pathlib
+import posixpath
 import ssl
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
 DAV = "{DAV:}"
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects outright.
+
+    A redirect is chosen by the server, and urllib replays the Authorization
+    header to wherever it points. With a bearer credential in that header, an
+    open or hostile redirect hands the macaroon to a third party. Nothing in
+    this fetch needs redirects, so the safe behaviour is to have none.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        raise urllib.error.HTTPError(
+            req.full_url, code,
+            f"refusing redirect to {newurl}: the credential would travel with it",
+            headers, fp)
+
+
+def _same_origin(url: str, base: str) -> bool:
+    """True when url is on base's origin and under base's path.
+
+    PROPFIND hrefs come from the server, so they are untrusted input. Without
+    this check a crafted response steers the next request, and the bearer
+    token, anywhere it likes.
+    """
+    u, b = urllib.parse.urlsplit(url), urllib.parse.urlsplit(base)
+    if (u.scheme, u.netloc) != (b.scheme, b.netloc):
+        return False
+    return posixpath.normpath(urllib.parse.unquote(u.path)).startswith(
+        posixpath.normpath(urllib.parse.unquote(b.path)))
 
 
 def _request(url: str, method: str, token: str, depth: str = "1",
@@ -38,7 +70,9 @@ def _request(url: str, method: str, token: str, depth: str = "1",
     if insecure:
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-    with urllib.request.urlopen(req, timeout=120, context=ctx) as r:
+    opener = urllib.request.build_opener(_NoRedirect,
+                                         urllib.request.HTTPSHandler(context=ctx))
+    with opener.open(req, timeout=120) as r:
         return r.read()
 
 
@@ -62,14 +96,20 @@ def walk(base: str, token: str, insecure: bool) -> list[str]:
             href = (resp.findtext(f"{DAV}href") or "").strip()
             if not href or href.rstrip("/") == url.rstrip("/").split("://", 1)[-1].split("/", 1)[-1]:
                 pass
-            full = href if href.startswith("http") else (
-                url.split("/", 3)[0] + "//" + url.split("/", 3)[2] + href)
+            full = urllib.parse.urljoin(url, href)
             if full.rstrip("/") == url.rstrip("/"):
                 continue
+            # The href came from the server. Anything off this origin, or
+            # outside the tree we were asked to read, is not followed and the
+            # credential never reaches it.
+            if not _same_origin(full, base):
+                print(f"  skipped off-tree href: {full}", file=sys.stderr)
+                continue
             iscoll = resp.find(f".//{DAV}collection") is not None
-            (queue if iscoll else found).append(full if iscoll else full)
-            if iscoll and not full.endswith("/"):
-                queue[-1] = full + "/"
+            if iscoll:
+                queue.append(full if full.endswith("/") else full + "/")
+            else:
+                found.append(full)
     return found
 
 
@@ -84,7 +124,17 @@ def main() -> int:
 
     token = os.environ.get("DCACHE_BEARER_TOKEN", "")
     out = pathlib.Path(a.out)
-    report = {"base": a.base, "token_supplied": bool(token), "files": [], "errors": []}
+    report = {"base": a.base, "token_supplied": bool(token),
+              "tls": "insecure" if a.insecure else "verified",
+              "files": [], "errors": []}
+    if a.insecure:
+        # Recorded in the report as well as printed: a result obtained without
+        # certificate verification carries a caveat, and a reader of the JSON
+        # should not have to have seen the console to know that.
+        print("  WARNING: --insecure disables certificate verification, and the "
+              "bearer token travels over that connection. The dCache doors have "
+              "presented valid certificates since 2026-09-21, so this should not "
+              "be needed.", file=sys.stderr)
 
     if not token:
         report["verdict"] = ("no token: set DCACHE_BEARER_TOKEN in the REANA secret "
@@ -97,7 +147,13 @@ def main() -> int:
             rel = rel[len(prefix):].lstrip("/")
             if not rel:
                 continue
-            dest = out / rel
+            # rel is derived from a server-supplied href, so it is untrusted.
+            # Without this a response containing ../ writes outside --out.
+            dest = (out / rel).resolve()
+            if not str(dest).startswith(str(out.resolve()) + os.sep):
+                report["errors"].append(f"{rel}: refused, escapes --out")
+                print(f"  refused (escapes --out): {rel}", file=sys.stderr)
+                continue
             dest.parent.mkdir(parents=True, exist_ok=True)
             try:
                 dest.write_bytes(_request(href, "GET", token, "0", a.insecure))
