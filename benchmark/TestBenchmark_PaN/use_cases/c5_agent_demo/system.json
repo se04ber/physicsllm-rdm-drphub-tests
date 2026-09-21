@@ -1,0 +1,8 @@
+{
+  "schema": "physicsllm.system_under_test.v1",
+  "use_case_id": "c5_agent_demo",
+  "note": "A stand-in agent, invoked by the harness so the measurement path is exercised end to end: a real subprocess, real model calls through the counting proxy, real latency. A submitted system replaces demo_agent.py and changes nothing else.",
+  "kind": "subprocess",
+  "command": ["python3", "demo_agent.py"],
+  "timeout_s": 180
+}

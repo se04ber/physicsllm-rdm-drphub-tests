@@ -1,0 +1,53 @@
+version: 0.9.0
+
+# Evaluate a benchmark that lives on dCache.
+#
+# This is the community path end to end: someone uploads a bundle to the VO
+# space, and a REANA job fetches it and scores it. No copy of their data in
+# this repository, and no manual step between the upload and the verdict.
+#
+# Reachability is measured rather than assumed. On 2026-09-21 the S4P
+# preflight card ran on a REANA node and reached all three dCache doors, DNS,
+# TCP and OPTIONS, from the same node that could not open a TCP connection to
+# physicsllm-rdm.desy.de. Storage works from REANA; our MCP server does not.
+#
+# The credential is a dCache macaroon in DCACHE_BEARER_TOKEN, from the REANA
+# secret store. A macaroon suits this: it carries a path caveat and an expiry,
+# so the credential is bounded to the tree it may read rather than relying on
+# the job to behave.
+#
+#   reana-client secrets-add --env DCACHE_BEARER_TOKEN=<macaroon>
+
+inputs:
+  files:
+    - fetch_dcache.py
+    - eval_benchmark.py
+  parameters:
+    dcache_base: https://dcache-doma-door01.desy.de/punch/physicsllm/01Benchmarks
+    tree: benchmark
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: install
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp timeout 600 pip install --no-cache-dir --progress-bar off --target .deps deepeval || echo "deepeval unavailable - continuing with deterministic tiers"
+
+      - name: fetch
+        environment: 'python:3.12-slim'
+        commands:
+          # Exits 0 with a finding when the token is absent, so a missing
+          # secret reads as "not set up yet" rather than a broken card.
+          - python fetch_dcache.py --base ${dcache_base} --out ${tree}
+
+      - name: evaluate
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES python eval_benchmark.py --tree ${tree} --write-results
+
+outputs:
+  files:
+    - results/fetch_report.json
+    - results/benchmark_report.json

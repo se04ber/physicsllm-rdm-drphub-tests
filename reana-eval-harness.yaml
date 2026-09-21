@@ -16,6 +16,7 @@ inputs:
   files:
     - eval_harness.py
     - counting_proxy.py
+    - demo_agent.py
   directories:
     - benchmark
   parameters:
