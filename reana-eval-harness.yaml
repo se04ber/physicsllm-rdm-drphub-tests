@@ -1,0 +1,63 @@
+version: 0.9.0
+
+# Evaluate an agentic system: correctness with DeepEval, latency with
+# OpenTelemetry, token usage with a counting proxy that ships in the card.
+#
+# This card is meant to be run by anyone, against their own system and their
+# own model. Nothing in the measurement path requires our infrastructure, so a
+# partner institute gets the same numbers on their own REANA that they would
+# get on ours. What running it here adds is assurance, not capability, and the
+# report records which it was.
+#
+# Point `tree` at any directory containing cases.jsonl. Depth is irrelevant:
+# a flat folder and a deep suite tree both work.
+
+inputs:
+  files:
+    - eval_harness.py
+    - counting_proxy.py
+    - benchmark
+  parameters:
+    tree: benchmark
+
+    # The model the system under test will call. These names deliberately do
+    # not collide with LLM_*, LOCAL_LLM_* or OPENAI_*, which are already used
+    # several hundred times across this project; the harness reads only these
+    # and never falls back, because a fallback chain would reintroduce exactly
+    # the collision the names avoid.
+    #
+    # Supply EVAL_LLM_API_KEY through the REANA secret store, never here:
+    #   reana-client secrets-add --env EVAL_LLM_API_KEY=...
+    #
+    # EVAL_LLM_BASE_URL is forwarded verbatim. Open WebUI serves
+    # /api/chat/completions rather than /v1/chat/completions, so the proxy
+    # appends nothing to a URL that already names an endpoint.
+    eval_llm_base_url: https://api.helmholtz-blablador.fz-juelich.de/v1
+
+    # Authorization for most providers; x-api-key where a reverse proxy in
+    # front already consumes the Authorization header.
+    eval_llm_auth_header: Authorization
+
+    # One run cannot tell a system that is reliable from one that was lucky.
+    repeats: 3
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: install
+        environment: 'python:3.12-slim'
+        commands:
+          # Never fail the run on an install: the harness reports what is
+          # missing and computes everything that does not need it.
+          - HOME=/tmp pip install --no-cache-dir --quiet --target .deps deepeval==4.2.3 || echo "deepeval install failed - continuing without it"
+          - HOME=/tmp pip install --no-cache-dir --quiet --target .deps opentelemetry-sdk opentelemetry-api || echo "opentelemetry install failed - continuing without it"
+
+      - name: evaluate
+        environment: 'python:3.12-slim'
+        commands:
+          - HOME=/tmp PYTHONPATH=.deps DEEPEVAL_TELEMETRY_OPT_OUT=YES EVAL_LLM_BASE_URL=${eval_llm_base_url} EVAL_LLM_AUTH_HEADER=${eval_llm_auth_header} python eval_harness.py --tree ${tree} --repeats ${repeats} --out results
+
+outputs:
+  files:
+    - results/eval_report.json

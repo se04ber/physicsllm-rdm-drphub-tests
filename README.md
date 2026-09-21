@@ -15,6 +15,7 @@ spec changed when they were brought together.
 | MCP tool surface, measured | `reana-mcp-observed.yaml` | default | `RDM_MCP_BEARER_TOKEN` | untested with a token |
 | PaNOSC search from C4P | `reana-panosc-c4p.yaml` | compute4punch | `RDM_MCP_BEARER_TOKEN`, `HELMHOLTZ_TOP` | never completed |
 | S4P transfer | `reana-s4p-transfer.yaml` | default | `S4P_BEARER_TOKEN` | preflight runs, upload needs a token |
+| Agentic evaluation harness | `reana-eval-harness.yaml` | default | `EVAL_LLM_API_KEY` | runs; portable, meant for others to run too |
 
 `reana.yaml` is the DeepEval card because it is the only one known to complete
 end to end, so the launcher's default lands on something that works. The other
@@ -75,3 +76,42 @@ so REANA on C4P cannot pull one. Until an image is published somewhere public,
 
 * [`docs/mcp-observed.md`](docs/mcp-observed.md): what the MCP card measures,
   what has been verified against the live server, and what has not.
+
+## The evaluation harness
+
+`reana-eval-harness.yaml` is the one card here meant to be run by people other
+than us. Point it at your own agentic system and your own OpenAI-compatible
+model and it returns correctness, latency and token usage. Nothing in the
+measurement path requires our infrastructure.
+
+**A benchmark folder is any directory containing `cases.jsonl`.** Depth does
+not matter, so a flat folder and a deep suite tree both work. One file is the
+whole requirement: JSON per line with `expected_output`, and `actual_output`
+if you ran your system yourself.
+
+**Add `system.json` only if you want the harness to run your system**, which is
+what buys latency and token measurements. It declares how to invoke it:
+
+```json
+{"kind": "subprocess", "command": ["python3", "my_agent.py"]}
+{"kind": "http_endpoint", "base": "https://my-agent.example/answer"}
+{"kind": "python_entrypoint", "entrypoint": "my_pkg.agent:answer"}
+```
+
+Each receives one case as JSON and returns `{"output": "..."}`.
+
+**Token counting works without our gateway.** A small OpenAI-compatible proxy
+ships in the card, runs beside your agent, and records the usage block from
+each response. Set `EVAL_LLM_BASE_URL` to your provider and the harness sets
+`OPENAI_BASE_URL` for the agent automatically. The proxy forwards your URL
+verbatim, because Open WebUI serves `/api/chat/completions` rather than
+`/v1/chat/completions` and appending a path is how that becomes a 405.
+
+**Every number says how it was obtained.** `measured` means the harness
+observed it, `self_reported` means the case supplied it, `not_available` means
+nobody did. A call whose usage block was missing is reported as unmeasured
+rather than as zero tokens, because zero would be a lie.
+
+**Judged metrics never gate.** Every agentic metric DeepEval ships requires a
+judge model, so a judged score moves when the judge does. Anything that gates
+here is computed from what was observed.

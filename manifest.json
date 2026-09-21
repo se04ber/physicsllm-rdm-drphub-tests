@@ -125,6 +125,30 @@
         "results/preflight.json",
         "results/upload_report.json"
       ]
+    },
+    {
+      "id": "agentic-eval-harness",
+      "title": "Portable agentic evaluation: DeepEval correctness, OpenTelemetry latency, proxied token counting",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "EVAL_LLM_API_KEY"
+        ]
+      },
+      "entry_point": "reana-eval-harness.yaml",
+      "status": "runs locally against a stand-in agent; not yet run on REANA",
+      "environments": [
+        "python:3.12-slim"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "eval_harness.py",
+        "counting_proxy.py",
+        "benchmark"
+      ],
+      "outputs": [
+        "results/eval_report.json"
+      ]
     }
   ],
   "dataset": {
