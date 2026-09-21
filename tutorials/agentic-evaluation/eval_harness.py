@@ -317,15 +317,24 @@ def main() -> int:
         for k, v in sorted(tally.items(), key=lambda kv: order.get(kv[0], 9)))
 
     tok = tokens.get("total_tokens")
+    calls_made = tokens.get("calls", 0)
     if tok is None:
-        why = ("no model calls were made" if proxy_url
-               else "no counting proxy: EVAL_LLM_BASE_URL is unset")
+        if not proxy_url:
+            why = "no counting proxy: EVAL_LLM_BASE_URL is unset"
+        elif calls_made:
+            why = (f"{calls_made} model call{'s' if calls_made != 1 else ''} made, "
+                   "none returned a usage block")
+        else:
+            why = "no model calls were made"
         token_line = f"not measured, {why}"
     else:
         token_line = (f"{tok:,} over {tokens.get('calls', 0)} model call"
                       f"{'s' if tokens.get('calls', 0) != 1 else ''} "
                       f"({tokens.get('provenance')})")
     print(f"  tokens   {token_line}")
+    if tokens.get("unparsed_example"):
+        print(f"           upstream returned no usage block; body began: "
+              f"{tokens['unparsed_example'][:80]}")
     print(f"  gate     {gates or 'nothing found'}")
 
     (out / "eval_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

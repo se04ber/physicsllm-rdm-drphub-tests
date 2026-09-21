@@ -114,10 +114,16 @@ class _Handler(BaseHTTPRequestHandler):
                 {"error": {"message": str(exc)}}).encode(), type(exc).__name__
 
         elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+        preview = None
         try:
             usage = (json.loads(out.decode("utf-8")) or {}).get("usage")
         except Exception:  # noqa: BLE001 - streamed or non-JSON; usage stays None
             usage = None
+            # Record what actually came back. "200 with no usage" is
+            # indistinguishable from a dozen causes without it: a streamed
+            # data: frame, an HTML error page, a provider that simply omits
+            # the block. One line of the body separates them.
+            preview = " ".join(out[:300].decode("utf-8", "replace").split())[:200]
 
         with _LOCK:
             CALLS.append({
@@ -128,6 +134,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "total_tokens": (usage or {}).get("total_tokens"),
                 # A call whose usage we could not read is unmeasured, not free.
                 "provenance": "measured" if usage else "not_available",
+                **({"body_preview": preview} if preview else {}),
             })
 
         self.send_response(status)
@@ -163,6 +170,8 @@ def summary() -> dict[str, Any]:
         "note": (None if not calls else
                  "some calls returned no usage block; totals cover only those that did"
                  if len(measured) != len(calls) else None),
+        "unparsed_example": next((c.get("body_preview") for c in calls
+                                  if c.get("body_preview")), None),
         "calls_detail": calls,
     }
 
