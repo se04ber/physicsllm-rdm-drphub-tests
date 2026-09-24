@@ -7,9 +7,10 @@ card can be launched and can break without touching the others.
 
 | Card | What it is | Launchable repo |
 | --- | --- | --- |
-| [`drphub-hifis-dcache-token/`](drphub-hifis-dcache-token/) | Step-by-step: get a Helmholtz token, read and write the PUNCH dCache space with `rclone`, mint a read-only credential for REANA. Tutorial only, no code. | [physicsllm/drphub-hifis-dcache-token](https://gitlab-p4n.aip.de/physicsllm/drphub-hifis-dcache-token) |
-| [`drphub-survey/`](drphub-survey/) | The ErUM C.4/C.5 community survey. Links to the forms, says how to hand one in. | [physicsllm/drphub-survey](https://gitlab-p4n.aip.de/physicsllm/drphub-survey) |
-| [`drphub-agentic-evaluation/`](drphub-agentic-evaluation/) | Score an agentic system: correctness with DeepEval, latency with OpenTelemetry, tokens with a counting proxy. Runs locally or as a REANA card, optionally on a benchmark fetched from dCache. | [physicsllm/drphub-agentic-evaluation](https://gitlab-p4n.aip.de/physicsllm/drphub-agentic-evaluation) |
+| [`drphub-hifis-dcache-token/`](drphub-hifis-dcache-token/) | Step-by-step: get a Helmholtz token, read and write the PUNCH dCache space with `rclone`, mint a read-only credential for REANA. Tutorial only, no code. | [sabrina.ebert/drphub-hifis-dcache-token](https://gitlab-p4n.aip.de/sabrina.ebert/drphub-hifis-dcache-token) |
+| [`drphub-survey/`](drphub-survey/) | The ErUM C.4/C.5 community survey. Links to the forms, says how to hand one in. | [sabrina.ebert/drphub-survey](https://gitlab-p4n.aip.de/sabrina.ebert/drphub-survey) |
+| [`drphub-agentic-evaluation/`](drphub-agentic-evaluation/) | Score an agentic system: correctness with DeepEval, latency with OpenTelemetry, tokens with a counting proxy. Runs locally or as a REANA card, optionally on a benchmark fetched from dCache. | [sabrina.ebert/drphub-agentic-evaluation](https://gitlab-p4n.aip.de/sabrina.ebert/drphub-agentic-evaluation) |
+| [`drphub-c4p-hello/`](drphub-c4p-hello/) | Hello world on a DESY Compute4PUNCH node. One step, standard library only, writes which node ran it. The smallest check that the C4P backend and the DESY pin work for you. | [sabrina.ebert/drphub-c4p-hello](https://gitlab-p4n.aip.de/sabrina.ebert/drphub-c4p-hello) |
 
 Each folder is self-contained. Clone it, or the matching AIP repository,
 and start from its README.
@@ -48,7 +49,7 @@ Edit here, then push the folder as that repository's `main`:
 git subtree push --prefix=drphub-agentic-evaluation aip-drphub-agentic-evaluation main
 ```
 
-Same for the other two, swapping the folder and remote name. The remotes are
+Same for the others, swapping the folder and remote name. The remotes are
 named `aip-<folder>`.
 
 *Physics-LLM (BMBF ErUM-Data), work package C.5. CC BY 4.0.*

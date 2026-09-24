@@ -1,0 +1,34 @@
+version: 0.1.0
+
+# Hello world on a DESY Compute4PUNCH node.
+#
+# Three things about compute4punch that this spec respects, each learned from
+# a failed submission:
+#   - only wlcg-wn:latest has been observed to submit there
+#   - c4p_cpu_cores and c4p_memory_limit are strings, so they are quoted
+#   - pip cannot write on this backend, so the script is standard library only
+#
+# The DESY pin restricts the job to DESY drones. Expect queue time: the pool
+# is smaller, and the job waits for one to fall idle.
+
+inputs:
+  files:
+    - hello_c4p.py
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: hello
+        environment: "wlcg-wn:latest"
+        compute_backend: compute4punch
+        c4p_cpu_cores: "1"
+        c4p_memory_limit: "256"
+        c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
+        commands:
+          - mkdir -p outputs
+          - python3 hello_c4p.py
+
+outputs:
+  files:
+    - outputs/hello.txt

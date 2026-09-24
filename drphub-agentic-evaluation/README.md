@@ -152,7 +152,7 @@ the run continues on the deterministic tiers and the report header says
 If your benchmark lives on the PUNCH dCache space, a REANA job can fetch and
 score it with no copy in this repository. This needs `DCACHE_BEARER_TOKEN`
 in your REANA secret store. How to get one is in
-[drphub-hifis-dcache-token](https://gitlab-p4n.aip.de/physicsllm/drphub-hifis-dcache-token).
+[drphub-hifis-dcache-token](https://gitlab-p4n.aip.de/sabrina.ebert/drphub-hifis-dcache-token).
 
 Upload with your own token, checking the bundle first:
 
