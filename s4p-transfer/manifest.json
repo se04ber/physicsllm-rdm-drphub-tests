@@ -1,0 +1,220 @@
+{
+  "schema": "physicsllm.upload_manifest.v1",
+  "id": "physicsllm-rdm-drphub-cards",
+  "title": "physics-llm RDM: DRP-Hub workflow cards",
+  "license": "CC-BY-4.0",
+  "note": "Four cards in one repository because the DRP-Hub launcher clones only the default branch. reana.yaml is the DeepEval card, the one known to complete, so the launcher's default lands on something that works.",
+  "default_entry_point": "reana.yaml",
+  "cards": [
+    {
+      "id": "deepeval-a-data-reflectivity",
+      "title": "DeepEval on A_Data: real extraction output against the published SciCat record",
+      "kind": "evaluation",
+      "secrets": {
+        "optional": [
+          "DEEPEVAL_JUDGE_MODEL",
+          "RDM_MCP_BEARER_TOKEN"
+        ]
+      },
+      "entry_point": "reana.yaml",
+      "status": "completed on REANA",
+      "environments": [
+        "python:3.12-slim"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "run_deepeval.py",
+        "eval_live.py",
+        "data/routing_cases.jsonl",
+        "data/panet_cases.jsonl",
+        "eval_benchmark.py",
+        "benchmark/TestBenchmark_PaN/config_user_group.json",
+        "benchmark/TestBenchmark_PaN/datasets/c5_metadata_suggestion/p08_reflectivity/cases.jsonl",
+        "data/golden_label.json",
+        "data/mapped_header_draft.json",
+        "data/SOURCE.json",
+        "manifest.json",
+        "LICENSE",
+        "CITATION.cff"
+      ],
+      "outputs": [
+        "results/deepeval_report.json",
+        "results/live_routing.json",
+        "results/benchmark_report.json"
+      ]
+    },
+    {
+      "id": "rdm-mcp-tool-surface-observed",
+      "title": "The RDM MCP tool surface, scored with DeepEval and timed with OpenTelemetry",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "RDM_MCP_BEARER_TOKEN"
+        ]
+      },
+      "entry_point": "reana-mcp-observed.yaml",
+      "status": "runs locally against the live server; never run with a token",
+      "environments": [
+        "python:3.12-slim"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "mcp_client.py",
+        "run_card.py",
+        "build_cases.py",
+        "benchmark/TestBenchmark_PaN/config_user_group.json",
+        "benchmark/TestBenchmark_PaN/use_cases/c5_mcp_tool_surface/system.json",
+        "benchmark/TestBenchmark_PaN/datasets/c5_mcp_tool_surface/rdm_mcp_live/cases.jsonl",
+        "manifest.json",
+        "LICENSE",
+        "CITATION.cff"
+      ],
+      "outputs": [
+        "results/mcp_card_report.json",
+        "results/otel_summary.json",
+        "results/otel_spans.json"
+      ]
+    },
+    {
+      "id": "panosc-search-from-c4p",
+      "title": "Reach the RDM MCP server from a Compute4PUNCH job",
+      "kind": "probe",
+      "secrets": {
+        "required": [
+          "RDM_MCP_BEARER_TOKEN",
+          "HELMHOLTZ_TOP"
+        ]
+      },
+      "entry_point": "reana-panosc-c4p.yaml",
+      "status": "DNS, TCP and TLS pass; the handshake needs a token",
+      "environments": [
+        "wlcg-wn:latest"
+      ],
+      "compute_backend": "compute4punch",
+      "files": [
+        "probe_mcp.py"
+      ],
+      "outputs": [
+        "results/mcp_probe.json"
+      ]
+    },
+    {
+      "id": "s4p-dcache-transfer",
+      "title": "S4P reachability and outbound transfer of a card's own results",
+      "kind": "probe",
+      "secrets": {
+        "required": [
+          "S4P_BEARER_TOKEN"
+        ]
+      },
+      "entry_point": "reana-s4p-transfer.yaml",
+      "status": "preflight runs; upload needs a token",
+      "environments": [
+        "python:3.12-slim"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "preflight.py",
+        "publish_results.py",
+        "README.md",
+        "manifest.json",
+        "LICENSE",
+        "CITATION.cff"
+      ],
+      "outputs": [
+        "results/preflight.json",
+        "results/upload_report.json"
+      ]
+    },
+    {
+      "id": "agentic-eval-harness",
+      "title": "Portable agentic evaluation: DeepEval correctness, OpenTelemetry latency, proxied token counting",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "EVAL_LLM_API_KEY"
+        ]
+      },
+      "entry_point": "reana-eval-harness.yaml",
+      "status": "runs locally against a stand-in agent; not yet run on REANA",
+      "environments": [
+        "python:3.12-slim"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "eval_harness.py",
+        "counting_proxy.py",
+        "benchmark"
+      ],
+      "outputs": [
+        "results/eval_report.json"
+      ]
+    },
+    {
+      "id": "rdm-mcp-tool-surface-from-desy",
+      "title": "The RDM MCP tool surface, measured from inside the DESY network",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "RDM_MCP_BEARER_TOKEN",
+          "HELMHOLTZ_TOP"
+        ]
+      },
+      "entry_point": "reana-mcp-c4p.yaml",
+      "status": "submitted to C4P 2026-09-21; scheduling on a DESY drone unproven",
+      "environments": [
+        "wlcg-wn:latest"
+      ],
+      "compute_backend": "compute4punch",
+      "files": [
+        "run_card.py",
+        "mcp_client.py"
+      ],
+      "outputs": [
+        "results/mcp_card_report.json",
+        "results/otel_summary.json"
+      ]
+    },
+    {
+      "id": "rdm-mcp-selfcontained",
+      "title": "The MCP server and its evaluation in one REANA job",
+      "kind": "evaluation",
+      "secrets": {
+        "required": [
+          "RDM_MCP_BEARER_TOKEN"
+        ]
+      },
+      "entry_point": "reana-mcp-selfcontained.yaml",
+      "status": "completed on REANA 2026-09-21: session established, tool surface matched, 23/23 scored, gate=pass",
+      "environments": [
+        "ghcr.io/se04ber/rdm-mcp:latest"
+      ],
+      "compute_backend": "default",
+      "files": [
+        "run_card.py",
+        "mcp_client.py",
+        "serve_and_measure.sh"
+      ],
+      "outputs": [
+        "results/mcp_card_report.json",
+        "results/otel_summary.json",
+        "results/server.log"
+      ]
+    }
+  ],
+  "dataset": {
+    "pid": "public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4",
+    "source": "A_Data/Reflectivity_hd5",
+    "note": "Prediction is metadata_out/mapped_header_draft.json as our extraction produced it."
+  },
+  "metrics": {
+    "required": [
+      "exact",
+      "normalised"
+    ],
+    "research_only": [
+      "judged"
+    ],
+    "note": "The judged tier uses DeepEval GEval and never gates. No judge configured means it is reported as skipped, not as a pass."
+  }
+}

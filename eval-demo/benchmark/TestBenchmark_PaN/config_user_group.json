@@ -1,0 +1,8 @@
+{
+  "user": "sabebert",
+  "suite": "TestBenchmark_PaN",
+  "registered_in_benchmark_suites_json": false,
+  "pnfs_root": "/pnfs/desy.de/hifis-storage/punch/physicsllm/user/sabebert/TestBenchmark_PaN",
+  "webdav_base_url": "https://dcache-doma-door01.desy.de/punch/physicsllm/user/sabebert/TestBenchmark_PaN",
+  "retention_days": 730
+}

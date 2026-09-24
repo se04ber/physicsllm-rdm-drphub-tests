@@ -1,0 +1,68 @@
+{
+  "schema": "physicsllm.system_under_test.v1",
+  "use_case_id": "c5_mcp_tool_surface",
+  "note": "What is being evaluated. The dataset says what it is asked and what right looks like; this says what produces the answer. Here the answer comes from a running server, so a regression in the deployment shows up as a failed case rather than as a stale file nobody re-generated.",
+
+  "kind": "mcp_server",
+
+  "mcp_server": {
+    "base": "https://physicsllm-rdm.desy.de:8443",
+    "endpoint": "https://physicsllm-rdm.desy.de:8443/mcp",
+    "transport": "streamable-http",
+    "protocol_version": "2025-06-18",
+    "auth": "bearer token in RDM_MCP_BEARER_TOKEN, from the REANA secret store",
+    "tls": "self-signed as of 2026-09-21, so the card defaults to tls_mode=insecure",
+    "tools": [
+      "panosc_search",
+      "panosc_get_dataset",
+      "resolve_technique",
+      "find_schema_for",
+      "list_schemas",
+      "describe_schema",
+      "validate_draft",
+      "list_mappings",
+      "describe_mapping"
+    ],
+    "tools_verified_from": "services/mcp/src/rdm_mcp/server.py in the physics-llm-rdm repository, read 2026-09-21",
+    "tools_note": "Nine tools, every one annotated read_only_hint=true. This endpoint exposes no rdm_route_request, no panet_search, no catalog_search and no catalog_get_record. An earlier system.json in this repository, on branch deepeval-a-data, names those four; it is wrong and this list supersedes it.",
+    "tools_exercised": [
+      "resolve_technique",
+      "find_schema_for",
+      "list_schemas",
+      "describe_schema",
+      "list_mappings",
+      "describe_mapping"
+    ],
+    "tools_not_exercised": {
+      "panosc_search": "reaches a third-party discovery API whose result set changes, so no expected value can be pinned here",
+      "panosc_get_dataset": "same, and it needs a dataset id from a search that is not pinned",
+      "validate_draft": "needs describe_schema to succeed first; add cases once the alps path is confirmed green against the deployment"
+    }
+  },
+
+  "reference": {
+    "golden_source": "the physics-llm-rdm context release the server reads",
+    "files": [
+      "contexts/c5/panet_technique_vocabulary.json",
+      "contexts/c5/technique_schema_crosswalk.json",
+      "contexts/c5/c5_rdm_schema_registry_catalog.json",
+      "contexts/c5/c5_rdm_mapping_registry_index.json",
+      "groups/ALPS/references/schema_alps.json"
+    ],
+    "present": true,
+    "note": "Each expected value is followed to one of these files, named per case in source_file. A phrase those files do not fix, such as one that falls through to PaNET's live SPARQL endpoint, is marked reference-free rather than given an invented golden."
+  },
+
+  "metrics": {
+    "gating": ["exact_match", "pattern_match", "json_correctness"],
+    "judged": [],
+    "judge_note": "None. This card has no model endpoint, so a judged metric would have nothing to run against. All three gating metrics are DeepEval metrics that consult no model.",
+    "deepeval_version": "4.2.3",
+    "fallback": "When the deepeval install fails, the same comparison is computed in plain Python and each case records which path produced its number."
+  },
+
+  "gate": {
+    "values": ["pass", "fail", "not-scored"],
+    "note": "A case with no actual_output was never answered and is not scored. Without a token every case is in that state and the card still writes a report. A call that succeeded and returned no value for the field the case asks about is different: actual_output becomes the JSON literal null, the case is scored, and it fails."
+  }
+}

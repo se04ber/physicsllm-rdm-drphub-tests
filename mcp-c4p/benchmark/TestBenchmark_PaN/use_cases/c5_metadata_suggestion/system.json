@@ -1,0 +1,39 @@
+{
+  "schema": "physicsllm.system_under_test.v1",
+  "use_case_id": "c5_metadata_suggestion",
+  "note": "What is being evaluated. The dataset says what it is fed and what right looks like; this says what produces the answer.",
+
+  "kind": "static_artifact",
+
+  "static_artifact": {
+    "actual_output_in_cases": true,
+    "produced_by": "sisyphos extraction, recorded in metadata_out/mapped_header_draft.json",
+    "why": "The prediction already exists, so the run compares rather than generates. Fast, offline, and reproducible - but it scores an artifact, not the running system."
+  },
+
+  "harness_image": {
+    "image": "ghcr.io/se04ber/nanobot-harness@sha256:REPLACE",
+    "entrypoint": ["python", "-m", "harness.run"],
+    "bundle": "metadata-suggestion",
+    "note": "NOT USABLE YET: every ghcr.io/se04ber image is private (HTTP 403 anonymously), and REANA on C4P cannot pull it. Either publish one image or keep kind=static_artifact."
+  },
+
+  "mcp_server": {
+    "base": "https://physicsllm-rdm.desy.de:8443",
+    "tools": ["rdm_route_request", "panet_search", "catalog_search", "catalog_get_record"],
+    "note": "Reachable and authenticating. Covers routing and retrieval, NOT metadata suggestion - the ten MCP tools are read-only by design and there is no suggest tool on that surface."
+  },
+
+  "reference": {
+    "golden_label": "golden_label/scicat_dataset_metadata.json",
+    "present": true,
+    "pid": "public-data/cb2f2cf8-3b59-4592-a383-706c2c91cfc4"
+  },
+
+  "metrics": {
+    "gating": ["exact", "normalised"],
+    "research_only": ["judged"],
+    "without_reference": ["no_fabricated_values", "schema_conformance"],
+    "note": "The last group is what remains applicable when golden_label is absent - ALPS today. A metric needing a reference is simply not run rather than silently scoring against nothing."
+  }
+}

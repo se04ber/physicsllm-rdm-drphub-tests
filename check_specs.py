@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import glob
 import pathlib
-import sys
 
 import yaml
 
@@ -81,7 +80,7 @@ def check(path: pathlib.Path) -> list[str]:
 
 def main() -> int:
     failures = 0
-    for name in sorted(glob.glob("reana*.yaml")):
+    for name in sorted(glob.glob("**/reana*.yaml", recursive=True)):
         path = pathlib.Path(name)
         problems = check(path)
         mark = "ok  " if not problems else "FAIL"

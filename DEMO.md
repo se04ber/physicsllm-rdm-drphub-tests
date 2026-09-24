@@ -3,6 +3,10 @@
 Every timing and every output below is from a real run on
 `reana-p4n.aip.de` on 2026-09-21. Nothing here is illustrative.
 
+Since then each card moved into its own folder with its spec renamed to
+`reana.yaml`, so run the commands below from inside the card's folder with
+`-f reana.yaml`. The timings and outputs are unchanged.
+
 ## Setup, once
 
 ```bash
