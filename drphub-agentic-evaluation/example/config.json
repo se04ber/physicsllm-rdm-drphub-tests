@@ -1,0 +1,15 @@
+{
+  "path": ".",
+  "storage": "local",
+  "agent": "agentCode/agent.py",
+  "repeats": 1,
+  "metrics": {
+    "correctness": true,
+    "latency": true,
+    "tokens": true
+  },
+  "model": {
+    "base_url": "https://api.helmholtz-blablador.fz-juelich.de/v1",
+    "name": "alias-fast"
+  }
+}

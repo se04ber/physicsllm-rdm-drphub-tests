@@ -1,3 +1,3 @@
-{"name": "xrr_acronym", "input": "What is the common three-letter acronym for X-ray reflectivity?", "expected_output": "XRR"}
+{"name": "xrr_acronym", "input": "What is the common three-letter acronym for X-ray reflectivity? Answer with the acronym only.", "expected_output": "XRR"}
 {"name": "p08_facility", "input": "At which synchrotron facility is beamline P08 located? Give the facility acronym only.", "expected_output": "PETRA III"}
 {"name": "wavelength_unit", "input": "In SI units, what is a beam wavelength expressed in? Give the unit name only.", "expected_output": "metre"}
