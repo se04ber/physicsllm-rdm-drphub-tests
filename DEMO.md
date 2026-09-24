@@ -19,7 +19,7 @@ reana-client ping
 ### 1. The MCP server and its evaluation, together, in 19 seconds
 
 ```bash
-reana-client run -f reana-mcp-selfcontained.yaml -w demo-mcp
+cd mcp-tools && reana-client run -f reana.yaml -w demo-mcp
 ```
 
 The card brings the server with it, starts it on loopback and measures
@@ -47,7 +47,7 @@ card cannot bring its own there either.
 ### 2. Measuring an agentic system
 
 ```bash
-reana-client run -f reana-eval-harness.yaml -w demo-eval
+cd eval-demo && reana-client run -f reana.yaml -w demo-eval
 ```
 
 Seven and a half minutes, nearly all of it the DeepEval install. Invokes the
@@ -73,7 +73,7 @@ difference. A green gate there would mean the comparison was not looking.
 ### 3. The community path, end to end
 
 ```bash
-reana-client run -f reana-dcache-benchmark.yaml -w demo-dcache \
+cd eval-demo && reana-client run -f reana-dcache-benchmark.yaml -w demo-dcache \
   -p dcache_base=https://dcache-doma-door01.desy.de/punch/physicsllm/user/<account>/Benchmarks
 ```
 
@@ -107,11 +107,11 @@ the data and is not.
 
 | Card | Duration | Why |
 | --- | --- | --- |
-| `reana-mcp-selfcontained.yaml` | 19 s | installs nothing |
-| `reana-s4p-transfer.yaml` | 22 s | reachability probes only |
-| `reana-eval-harness.yaml` | 7 m 30 s | DeepEval install |
-| `reana-dcache-benchmark.yaml` | 7 m 50 s | DeepEval install, then a 42-file fetch |
-| `reana.yaml` | 8 m 35 s | DeepEval install, four steps |
+| `mcp-tools/reana.yaml` | 19 s | installs nothing |
+| `s4p-transfer/reana.yaml` | 22 s | reachability probes only |
+| `eval-demo/reana.yaml` | 7 m 30 s | DeepEval install |
+| `eval-demo/reana-dcache-benchmark.yaml` | 7 m 50 s | DeepEval install, then a 42-file fetch |
+| `metadata-vs-scicat/reana.yaml` | 8 m 35 s | DeepEval install, four steps |
 
 A DeepEval install costs most of eight minutes on this cluster. Start
 anything that needs one before you begin talking.
@@ -133,8 +133,8 @@ Two behaviours of the Hub worth knowing before clicking:
 ## What will not work, and why
 
 **Anything reaching the deployed MCP server from REANA.** Measured twice, by
-two different cards: `reana-mcp-observed.yaml` fails the handshake with
-`Network is unreachable`, and `reana-s4p-transfer.yaml` reports
+two different cards: the earlier mcp-observed card (since folded into `mcp-tools/`) fails the handshake with
+`Network is unreachable`, and `s4p-transfer/reana.yaml` reports
 `physicsllm-rdm.desy.de` as the one host out of four where TCP fails. The
 three dCache doors all answer.
 

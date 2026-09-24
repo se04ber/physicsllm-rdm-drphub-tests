@@ -1,0 +1,40 @@
+version: 0.9.0
+
+# The same check against the deployed server, from a DESY Compute4PUNCH node.
+#
+# physicsllm-rdm.desy.de is not reachable from REANA's default backend, so
+# the job is pinned to a DESY drone. Expect queue time: the pool is small.
+# No install step, pip cannot write on this backend, and none is needed:
+# run.py and mcp_client.py are standard library, only DeepEval's metrics are
+# replaced by their local twins.
+#
+# Needs two secrets in the REANA store: RDM_MCP_BEARER_TOKEN and HELMHOLTZ_TOP.
+
+inputs:
+  files:
+    - run.py
+    - mcp_client.py
+  directories:
+    - cases
+  parameters:
+    mcp_base: https://physicsllm-rdm.desy.de:8443
+    tls_mode: verify
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: measure
+        environment: "wlcg-wn:latest"
+        compute_backend: compute4punch
+        c4p_cpu_cores: "1"
+        c4p_memory_limit: "512"
+        c4p_additional_requirements: 'regexp("desy",Target.TardisDroneUuid)'
+        commands:
+          - mkdir -p results
+          - python3 run.py --base ${mcp_base} --tls ${tls_mode} --out results
+
+outputs:
+  files:
+    - results/report.json
+    - results/otel_summary.json

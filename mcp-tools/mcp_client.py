@@ -95,7 +95,7 @@ class Telemetry:
     the DeepEval report.
     """
 
-    def __init__(self, service_name: str = "drphub-mcp-observed") -> None:
+    def __init__(self, service_name: str = "mcp-tools") -> None:
         self.enabled = False
         self.error: str | None = None
         self._exporter = None
@@ -378,7 +378,7 @@ class MCPClient:
                 "params": {
                     "protocolVersion": PROTOCOL_VERSION,
                     "capabilities": {},
-                    "clientInfo": {"name": "drphub-mcp-observed", "version": "1"},
+                    "clientInfo": {"name": "mcp-tools", "version": "1"},
                 },
             },
             tool=None,

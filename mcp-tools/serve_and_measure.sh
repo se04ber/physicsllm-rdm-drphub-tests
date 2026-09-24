@@ -1,0 +1,31 @@
+#!/bin/sh
+# Start the MCP server on loopback, wait for it, then run the cases against it.
+# Lives in a file because REANA substitutes ${...} in step commands, so an
+# inline shell loop dies with "Invalid placeholder in string" before it runs.
+set -eu
+PORT="${1:-8000}"
+mkdir -p results
+
+RDM_MCP_ENV=production \
+RDM_MCP_HOST=127.0.0.1 \
+RDM_MCP_PORT="$PORT" \
+RDM_MCP_ALLOWED_HOSTS="127.0.0.1,127.0.0.1:$PORT,localhost,localhost:$PORT" \
+  rdm-mcp > results/server.log 2>&1 &
+SERVER_PID=$!
+
+i=0
+while [ "$i" -lt 30 ]; do
+  if python3 -c "import socket,sys; s=socket.socket(); s.settimeout(1); sys.exit(0 if s.connect_ex(('127.0.0.1', $PORT))==0 else 1)"; then
+    echo "server listening on 127.0.0.1:$PORT after ${i}s"
+    break
+  fi
+  i=$((i + 2))
+  sleep 2
+done
+
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+  echo "server exited before it listened, its log follows" >&2
+  cat results/server.log >&2 || true
+fi
+
+python3 run.py --base "http://127.0.0.1:$PORT" --tls verify --out results

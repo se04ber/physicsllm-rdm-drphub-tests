@@ -1,0 +1,35 @@
+version: 0.9.0
+
+# The MCP server and its check, in one REANA job.
+#
+# The image ghcr.io/se04ber/rdm-mcp is public and contains the server. The
+# job starts it on loopback and runs the cases against it, so this runs on
+# any REANA with no dependency on reaching DESY. Completed in 19 seconds.
+#
+# The server and the card read the same secret:
+#   reana-client secrets-add --env RDM_MCP_BEARER_TOKEN=<value>
+
+inputs:
+  files:
+    - run.py
+    - mcp_client.py
+    - serve_and_measure.sh
+  directories:
+    - cases
+  parameters:
+    port: "8000"
+
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: serve-and-measure
+        environment: 'ghcr.io/se04ber/rdm-mcp:latest'
+        commands:
+          - sh serve_and_measure.sh ${port}
+
+outputs:
+  files:
+    - results/report.json
+    - results/otel_summary.json
+    - results/server.log

@@ -1,3 +1,0 @@
-{"name":"technique_of_xrr","input":"What is the common three-letter acronym for X-ray reflectivity?","expected_output":"XRR"}
-{"name":"units_of_wavelength","input":"In the SI system, what unit is a beam wavelength expressed in? Give the unit name.","expected_output":"metre"}
-{"name":"facility_of_p08","input":"At which synchrotron facility is beamline P08 located? Give the facility acronym.","expected_output":"PETRA III"}
